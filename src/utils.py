@@ -6,8 +6,9 @@
 import logging
 import mimetypes
 import re
+import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import urlparse
 
 import boto3
@@ -15,6 +16,7 @@ import orjson
 import structlog
 from botocore.exceptions import ClientError
 from prometheus_client import push_to_gateway
+from requests import HTTPError
 
 import config
 
@@ -192,6 +194,31 @@ def get_cover_infos_lookup() -> Dict[Any, Any]:
             return cover_infos_lookup
     else:
         return {}
+
+
+def retry(retries: int, delays: list[int]) -> Callable:
+    def decorator(func: Callable) -> Callable:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            for attempt in range(retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if attempt == retries - 1:
+                        logger.error(
+                            f"Attempt {attempt + 1} failed. No more retries left. Error: {e}"
+                        )
+                        raise HTTPError(
+                            f"Failed to make request after {retries} attempts: {e}"
+                        )
+                    else:
+                        logger.warning(
+                            f"Attempt {attempt + 1} failed. Retrying in {delays[attempt]} seconds. Error: {e}"
+                        )
+                        time.sleep(delays[attempt])
+
+        return wrapper
+
+    return decorator
 
 
 def push_metrics_to_pushgateway(metric, metric_value, label_value, registry):

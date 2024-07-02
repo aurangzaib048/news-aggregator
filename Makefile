@@ -30,4 +30,11 @@ validjson:
 	echo Checking that feed/feed.json is of the expected size...
 	test `stat -c%s output/feed/feed.json` -gt 1000
 
+migrate-up:
+	alembic upgrade head
+
+migrate-down:
+	alembic downgrade base
+
+
 test: pytest validjson

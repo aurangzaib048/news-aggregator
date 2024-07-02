@@ -17,10 +17,10 @@ import structlog
 from better_profanity import profanity
 from fake_useragent import UserAgent
 from prometheus_client import CollectorRegistry, Gauge, multiprocess
-from requests import HTTPError, RequestException
+from requests import HTTPError
 
 from config import get_config
-from utils import push_metrics_to_pushgateway
+from utils import push_metrics_to_pushgateway, retry
 
 ua = UserAgent(browsers=["edge", "chrome", "firefox", "safari", "opera"])
 config = get_config()
@@ -60,6 +60,7 @@ PUBLISHER_URL_ERR_ALERT_NAME_METRIC = Gauge(
 )
 
 
+@retry(retries=2, delays=[10, 20])
 def get_with_max_size(
     url: str, max_bytes: Optional[int] = config.max_content_size
 ) -> bytes:
@@ -79,27 +80,17 @@ def get_with_max_size(
     """
     headers = {"User-Agent": ua.random, **config.default_headers}
 
-    try:
-        with requests.get(
-            url, timeout=config.request_timeout, headers=headers
-        ) as response:
-            response.raise_for_status()
+    with requests.get(url, timeout=config.request_timeout, headers=headers) as response:
+        response.raise_for_status()
 
-            if response.status_code != 200:
-                raise HTTPError(f"HTTP error with status code {response.status_code}")
+        if response.status_code != 200:
+            raise HTTPError(f"HTTP error with status code {response.status_code}")
 
-            content_length = response.headers.get("Content-Length")
-            if (
-                max_bytes is not None
-                and content_length
-                and int(content_length) > max_bytes
-            ):
-                raise ValueError("Content-Length too large")
+        content_length = response.headers.get("Content-Length")
+        if max_bytes is not None and content_length and int(content_length) > max_bytes:
+            raise ValueError("Content-Length too large")
 
-            return response.content
-
-    except RequestException as e:
-        raise HTTPError(f"Failed to make request: {e}")
+        return response.content
 
 
 def download_feed(feed: str, max_feed_size: int = 10000000) -> Optional[Dict[str, str]]:

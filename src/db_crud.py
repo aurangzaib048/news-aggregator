@@ -3,7 +3,6 @@ from copy import deepcopy
 from datetime import datetime, time
 
 import orjson
-import pytz
 import structlog
 from sqlalchemy import func
 
@@ -390,9 +389,9 @@ def get_article(url_hash, locale):
                 if article.img:
                     article_data = {
                         "title": article.title,
-                        "publish_time": article.publish_time.astimezone(
-                            pytz.utc
-                        ).strftime("%Y-%m-%d %H:%M:%S"),
+                        "publish_time": article.publish_time.strftime(
+                            "%Y-%m-%d %H:%M:%S"
+                        ),
                         "img": article.img,
                         "category": article.category,
                         "description": article.description,
@@ -418,6 +417,8 @@ def get_article(url_hash, locale):
                         article_cache_record.cache_hit += 1
                         session.commit()
                         session.refresh(article_cache_record)
+
+                    logger.info(f"Article {article.title} found in database")
 
                     return article_data
                 else:
@@ -484,9 +485,7 @@ def get_remaining_articles(feed_url_hashes):
                     )
                 article_data = {
                     "title": article.title,
-                    "publish_time": article.publish_time.astimezone(pytz.utc).strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    ),
+                    "publish_time": article.publish_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "img": article.img,
                     "category": article.category,
                     "description": article.description,

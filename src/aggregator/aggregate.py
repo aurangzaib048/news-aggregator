@@ -257,7 +257,6 @@ class Aggregator:
                 ):
                     insert_external_channels(
                         article["url_hash"],
-                        article["title"],
                         ext_channels,
                         api_raw_data,
                     )
