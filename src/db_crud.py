@@ -444,7 +444,7 @@ def update_or_insert_article(article_data, locale):
                 article.pop_score = article_data.get("pop_score")
                 article.score = article_data.get("score", 0)
 
-                if article_data.get("img"):
+                if article_data.get("img") and article.img != article_data.get("img"):
                     article.img = article_data.get("img")
                     article.padded_img = article_data.get("padded_img")
 
