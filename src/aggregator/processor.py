@@ -34,13 +34,14 @@ config = get_config()
 ua = UserAgent(browsers=["edge", "chrome", "firefox", "safari", "opera"])
 
 
-def process_articles(article, _publisher):  # noqa: C901
+def process_articles(article, _publisher, feed_info):  # noqa: C901
     """
     Process the given article and return a dictionary containing the processed data.
 
     Args:
         article (dict): The article to be processed.
         _publisher (dict): The publisher information.
+        feed_info (dict): The feed information.
 
     Returns:
         dict: A dictionary containing the processed data of the article.
@@ -77,6 +78,10 @@ def process_articles(article, _publisher):  # noqa: C901
         out_article["publish_time"] = dateparser.parse(article.get("updated"))
     elif article.get("published"):
         out_article["publish_time"] = dateparser.parse(article.get("published"))
+    elif feed_info.get("updated"):
+        out_article["publish_time"] = dateparser.parse(feed_info.get("updated"))
+    elif feed_info.get("published"):
+        out_article["publish_time"] = dateparser.parse(feed_info.get("published"))
     else:
         return None  # skip (no update field)
 
@@ -90,9 +95,10 @@ def process_articles(article, _publisher):  # noqa: C901
 
     now_utc = datetime.now().replace(tzinfo=pytz.utc)
     if _publisher["content_type"] != "product":
-        if out_article["publish_time"] > now_utc or out_article["publish_time"] < (
-            now_utc - timedelta(days=60)
-        ):
+        if out_article["publish_time"] > now_utc:
+            out_article["publish_time"] = now_utc
+
+        if out_article["publish_time"] < (now_utc - timedelta(days=60)):
             return None  # skip (newer than now() or older than 1 month)
 
     out_article["publish_time"] = out_article["publish_time"].strftime(
