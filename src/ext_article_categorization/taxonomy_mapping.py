@@ -204,7 +204,7 @@ TIER_1_TO_TIER_2_MAPPING = {
     "*Belief": ["/People & Society/Religion & Belief"],
 }
 
-with open("data/gcloud_taxonomy.txt", "r") as f:
+with open(config.external_taxonomy_file, "r") as f:
     gcloud_taxonomy = f.readlines()
 
 
