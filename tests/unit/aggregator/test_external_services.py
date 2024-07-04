@@ -8,10 +8,11 @@ class TestGetPopularityScore:
     # Successfully retrieves popularity score for an article.
     def test_retrieves_popularity_score(self, mocker):
         # Mock the get_with_max_size function to return a sample response
-        mocker.patch(
-            "aggregator.external_services.get_with_max_size",
-            return_value=b'{"popularity": {"popularity": {"score1": 1, "score2": 2}}}',
+        mock_get = mocker.patch("requests.get")
+        mock_get.return_value.content = (
+            b'{"popularity": {"popularity": {"score1": 1, "score2": 2}}}'
         )
+        mocker.patch("structlog.getLogger")
 
         # Create a sample article
         out_article = {
@@ -31,7 +32,7 @@ class TestGetPopularityScore:
     def test_invalid_or_empty_url(self, mocker):
         # Mock the get_with_max_size function to raise an exception
         mocker.patch(
-            "aggregator.external_services.get_with_max_size",
+            "aggregator.external_services.requests.get",
             side_effect=ValueError("Content-Length too large"),
         )
 
