@@ -371,26 +371,21 @@ def insert_article(article, locale_name):
         logger.error(f"Error Connecting to database: {e}")
 
 
-def get_article(url_hash, locale):
+def get_article(url_hash, locale_name):
     try:
         with config.get_db_session() as session:
             article = session.query(ArticleEntity).filter_by(url_hash=url_hash).first()
-            if article and locale in [
+            if article and locale_name in [
                 locale_model.locale.name for locale_model in article.feed.locales
             ]:
                 channels = []
-                locale = session.query(LocaleEntity).filter_by(locale=locale).first()
-                feed_locales = (
-                    session.query(FeedLocaleEntity)
-                    .filter_by(feed_id=article.feed.id, locale_id=locale.id)
-                    .all()
-                )
-                for feed_locale in feed_locales:
-                    channels.extend(
-                        session.query(ChannelEntity)
-                        .join(feed_locale_channel)
-                        .filter_by(feed_locale_id=feed_locale.id)
-                        .all()
+                for feed_locale in [
+                    locale_model
+                    for locale_model in article.feed.locales
+                    if locale_model.locale.name == locale_name
+                ]:
+                    channels = list(
+                        set([channel.name for channel in feed_locale.channels])
                     )
 
                 if article.img:
@@ -405,7 +400,7 @@ def get_article(url_hash, locale):
                         "content_type": article.content_type,
                         "publisher_id": article.feed.url_hash,
                         "publisher_name": article.feed.name,
-                        "channels": [channel.name for channel in set(channels)],
+                        "channels": channels,
                         "creative_instance_id": article.creative_instance_id,
                         "url": article.url,
                         "url_hash": article.url_hash,
@@ -413,6 +408,12 @@ def get_article(url_hash, locale):
                         "padded_img": article.padded_img,
                         "score": article.score,
                     }
+
+                    locale = (
+                        session.query(LocaleEntity)
+                        .filter_by(locale=locale_name)
+                        .first()
+                    )
 
                     article_cache_record = (
                         session.query(ArticleCacheRecordEntity)
