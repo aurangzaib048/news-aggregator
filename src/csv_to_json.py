@@ -127,5 +127,58 @@ def main():
         )
 
 
+def csv_to_dict_db(locale):
+    """
+    This function is the main entry point of the program. It performs the following tasks:
+    - Constructs the file paths for the publisher file, feed output, and sources output.
+    - Reads the publisher file and creates a list of PublisherModel objects.
+    - Sorts the list of PublisherModel objects based on the publisher name.
+    - Writes the list of publishers data by URL to the feed output file.
+    - Writes the list of publishers data as a list to the sources output file.
+    - Uploads the sources output file to the specified S3 bucket.
+
+    Parameters:
+    None
+
+    Returns:
+    None
+    """
+
+    publisher_file_path = config.sources_dir / f"sources.{locale}.csv"
+
+    try:
+        with open(publisher_file_path) as publisher_file_pointer:
+            publisher_reader = csv.DictReader(publisher_file_pointer)
+            publishers = [
+                PublisherModel(
+                    **data,
+                    favicon_url=favicons_lookup.get(data["Domain"], None),
+                    cover_url=cover_infos_lookup.get(
+                        data["Domain"], {"cover_url": None, "background_color": None}
+                    )["cover_url"],
+                    background_color=cover_infos_lookup.get(
+                        data["Domain"], {"cover_url": None, "background_color": None}
+                    )["background_color"],
+                )
+                for data in publisher_reader
+            ]
+    except FileNotFoundError as e:
+        raise e
+    except csv.Error as e:
+        raise e
+    except Exception as e:
+        raise e
+
+    publishers_data_as_list = [
+        x.dict(include=publisher_include_keys) for x in publishers
+    ]
+
+    publishers_data_as_list = sorted(
+        publishers_data_as_list, key=lambda x: x["publisher_name"]
+    )
+
+    return publishers_data_as_list
+
+
 if __name__ == "__main__":
     main()

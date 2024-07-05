@@ -39,8 +39,6 @@ if [[ "$task" = "run-all" ]]; then
     python -u src/csv_to_global_json.py
   fi
 
-  echo "Apply DB migrations"
-  alembic upgrade head
   echo "Inserting publisher in DB"
   python -u src/db_crud.py
 
@@ -75,6 +73,14 @@ elif [[ "$task" = "shell" ]]; then
 
 elif [[ "$task" = "help" || "$task" = "-h" || "$task" = "--help" ]]; then
   die_usage
+
+elif [ "$task" = "migup" ]; then
+  echo "Generating sources.global.json"
+  python -u src/csv_to_global_json.py
+
+  echo "Apply DB migrations"
+  alembic upgrade head
+
 
 elif [ "$task" = "purgeall" ]; then
     echo "Down Migration"
