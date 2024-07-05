@@ -138,10 +138,10 @@ def csv_to_dict_db(locale):
     - Uploads the sources output file to the specified S3 bucket.
 
     Parameters:
-    None
+    locale (str): The locale for which to generate the source data.
 
     Returns:
-    None
+    list: A list of dictionaries containing the publisher data.
     """
 
     publisher_file_path = config.sources_dir / f"sources.{locale}.csv"

@@ -39,9 +39,6 @@ if [[ "$task" = "run-all" ]]; then
     python -u src/csv_to_global_json.py
   fi
 
-  echo "Inserting publisher in DB"
-  python -u src/db_crud.py
-
   echo "Starting main script..."
   mkdir -p output/feed/cache
   python -u src/main.py
@@ -81,6 +78,8 @@ elif [ "$task" = "migup" ]; then
   echo "Apply DB migrations"
   alembic upgrade head
 
+  echo "Inserting publisher in DB"
+  python -u src/db_crud.py
 
 elif [ "$task" = "purgeall" ]; then
     echo "Down Migration"

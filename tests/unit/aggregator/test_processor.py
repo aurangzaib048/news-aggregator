@@ -1,9 +1,18 @@
 import hashlib
+import sys
 from datetime import datetime
+from unittest.mock import MagicMock
 
 import pytz
 
-from aggregator.processor import process_articles, scrub_html, unshorten_url
+sys.modules["db_crud"] = MagicMock()
+sys.modules["db_crud"].get_article = MagicMock(return_value=None)
+
+from aggregator.processor import (  # noqa: E402
+    process_articles,
+    scrub_html,
+    unshorten_url,
+)
 
 
 class TestProcessArticles:
@@ -109,11 +118,9 @@ class TestProcessArticles:
 class TestUnshortenUrl:
     # Unshortens a valid URL.
     def test_unshorten_valid_url(self, mocker):
-        # Mock the unshortener object
         mock_unshortener = mocker.Mock()
         mocker.patch("unshortenit.UnshortenIt", return_value=mock_unshortener)
 
-        # Mock the unshorten method
         mock_unshortener.unshorten.return_value = "https://example.com"
 
         # Create the input article
