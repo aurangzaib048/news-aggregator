@@ -18,9 +18,9 @@ class FeedEntity(Base):
     __table_args__ = {"schema": "news"}
 
     id = Column(BigInteger, primary_key=True, server_default=func.id_gen())
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, index=True)
     url = Column(String, nullable=False, index=True)
-    url_hash = Column(String, nullable=False, unique=True, index=True)
+    url_hash = Column(String, nullable=False, index=True)
     publisher_id = Column(
         BigInteger, ForeignKey("publisher.id"), nullable=False, index=True
     )

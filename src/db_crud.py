@@ -1,12 +1,13 @@
 import json
+import re
 from copy import deepcopy
 from datetime import datetime, time
 
-import orjson
 import structlog
 from sqlalchemy import func
 
 from config import get_config
+from csv_to_json import csv_to_dict_db
 from db.tables.article_cache_record_entity import ArticleCacheRecordEntity
 from db.tables.articles_entity import ArticleEntity
 from db.tables.base import feed_locale_channel
@@ -109,7 +110,9 @@ def insert_or_update_feed(session, feed_data, publisher_id):
     try:
         existing_feed = (
             session.query(FeedEntity)
-            .filter_by(url_hash=feed_data["publisher_id"])
+            .filter_by(
+                url_hash=feed_data["publisher_id"], name=feed_data["publisher_name"]
+            )
             .first()
         )
 
@@ -161,14 +164,17 @@ def insert_or_update_all_publishers():
     Insert or update all publishers in the database
     """
     try:
+        locales_finder = re.compile(r"sources\.(.*)\.csv")
+        source_files = config.sources_dir.glob("sources.*_*.csv")
         with config.get_db_session() as db_session:
-            with open(f"{config.output_path / config.global_sources_file}") as f:
+            for source_file in source_files:
+                csv_locale = locales_finder.findall(source_file.name)[0]
                 try:
+                    publisher_csv_data = csv_to_dict_db(csv_locale)
+                    locale = insert_or_get_locale(db_session, csv_locale)
                     logger.info("Inserting publisher data")
 
-                    publishers_data_as_list = orjson.loads(f.read())
-                    publishers_data_as_list = publishers_data_as_list
-                    for publisher_data in publishers_data_as_list:
+                    for publisher_data in publisher_csv_data:
                         publisher = insert_or_update_publisher(
                             db_session, publisher_data
                         )
@@ -178,27 +184,21 @@ def insert_or_update_all_publishers():
                             publisher_data,
                             publisher_id=publisher.id,
                         )
-                        for locale_item in publisher_data["locales"]:
-                            locale = insert_or_get_locale(
-                                db_session, locale_item["locale"]
-                            )
 
-                            feed_locale = insert_feed_locale(
-                                db_session, feed.id, locale.id, locale_item["rank"]
-                            )
+                        feed_locale = insert_feed_locale(
+                            db_session, feed.id, locale.id, publisher_data["rank"]
+                        )
 
-                            for channel_name in locale_item["channels"]:
-                                channel = insert_or_get_channel(
-                                    db_session, channel_name
+                        for channel_name in publisher_data["channels"]:
+                            channel = insert_or_get_channel(db_session, channel_name)
+
+                            try:
+                                feed_locale.channels.append(channel)
+                                db_session.commit()
+                            except Exception:
+                                logger.error(
+                                    f"Channels data already inserted for {publisher.url}"
                                 )
-
-                                try:
-                                    feed_locale.channels.append(channel)
-                                    db_session.commit()
-                                except Exception:
-                                    logger.error(
-                                        f"Channels data already inserted for {publisher.url}"
-                                    )
 
                     logger.info("Publisher data inserted successfully")
 
@@ -325,7 +325,12 @@ def insert_article(article, locale_name):
             try:
                 feed = (
                     db_session.query(FeedEntity)
-                    .filter(FeedEntity.url_hash == article.get("publisher_id"))
+                    .filter(
+                        FeedEntity.url_hash == article.get("publisher_id"),
+                        FeedEntity.locales.any(
+                            FeedLocaleEntity.locale.has(locale=locale_name)
+                        ),
+                    )
                     .first()
                 )
                 article_hash = article.get("url_hash")
@@ -366,24 +371,21 @@ def insert_article(article, locale_name):
         logger.error(f"Error Connecting to database: {e}")
 
 
-def get_article(url_hash, locale):
+def get_article(url_hash, locale_name):
     try:
         with config.get_db_session() as session:
             article = session.query(ArticleEntity).filter_by(url_hash=url_hash).first()
-            if article:
+            if article and locale_name in [
+                locale_model.locale.name for locale_model in article.feed.locales
+            ]:
                 channels = []
-                locale = session.query(LocaleEntity).filter_by(locale=locale).first()
-                feed_locales = (
-                    session.query(FeedLocaleEntity)
-                    .filter_by(feed_id=article.feed.id, locale_id=locale.id)
-                    .all()
-                )
-                for feed_locale in feed_locales:
-                    channels.extend(
-                        session.query(ChannelEntity)
-                        .join(feed_locale_channel)
-                        .filter_by(feed_locale_id=feed_locale.id)
-                        .all()
+                for feed_locale in [
+                    locale_model
+                    for locale_model in article.feed.locales
+                    if locale_model.locale.name == locale_name
+                ]:
+                    channels = list(
+                        set([channel.name for channel in feed_locale.channels])
                     )
 
                 if article.img:
@@ -398,7 +400,7 @@ def get_article(url_hash, locale):
                         "content_type": article.content_type,
                         "publisher_id": article.feed.url_hash,
                         "publisher_name": article.feed.name,
-                        "channels": [channel.name for channel in set(channels)],
+                        "channels": channels,
                         "creative_instance_id": article.creative_instance_id,
                         "url": article.url,
                         "url_hash": article.url_hash,
@@ -406,6 +408,12 @@ def get_article(url_hash, locale):
                         "padded_img": article.padded_img,
                         "score": article.score,
                     }
+
+                    locale = (
+                        session.query(LocaleEntity)
+                        .filter_by(locale=locale_name)
+                        .first()
+                    )
 
                     article_cache_record = (
                         session.query(ArticleCacheRecordEntity)
