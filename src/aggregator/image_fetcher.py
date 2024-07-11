@@ -16,7 +16,12 @@ from PIL import Image
 from aggregator import image_processor_sandboxed
 from config import get_config
 
-ua = UserAgent(browsers=["edge", "chrome", "firefox", "safari", "opera"])
+ua = UserAgent(
+    browsers=["edge", "chrome", "firefox", "safari", "opera"],
+    os=["windows", "macos", "linux"],
+    platforms=["pc"],
+)
+
 config = get_config()
 im_proc = image_processor_sandboxed.ImageProcessor(config.private_s3_bucket)
 logger = structlog.getLogger(__name__)

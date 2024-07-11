@@ -22,7 +22,12 @@ from requests import HTTPError, RequestException
 from config import get_config
 from utils import push_metrics_to_pushgateway
 
-ua = UserAgent(browsers=["edge", "chrome", "firefox", "safari", "opera"])
+ua = UserAgent(
+    browsers=["edge", "chrome", "firefox", "safari", "opera"],
+    os=["windows", "macos", "linux"],
+    platforms=["pc"],
+)
+
 config = get_config()
 
 logging.getLogger("urllib3").setLevel(logging.ERROR)  # too many un-actionable warnings
@@ -159,8 +164,11 @@ def parse_rss(downloaded_feed):
 
     try:
         feed_cache = feedparser.parse(data)
-        report["size_after_get"] = len(feed_cache["items"])
-        if report["size_after_get"] == 0:
+        report["size_after_get"] = len(feed_cache["entries"])
+        if len(feed_cache["entries"]) == 0:
+            feed_cache = feedparser.parse(url)
+
+        if len(feed_cache["entries"]) == 0:
             logger.info(f"Read 0 articles from {url}")
             raise Exception(f"Read 0 articles from {url}")
     except Exception as e:
