@@ -9,7 +9,7 @@ fake-useragent==1.5.1
 feedparser==6.0.11
 google-api-core==2.19.1
 google-auth==2.31.0
-google-cloud-language==2.13.3
+google-cloud-language==2.13.4
 googleapis-common-protos==1.63.2
 html2text==2024.2.26
 metadata-parser==0.12.1
