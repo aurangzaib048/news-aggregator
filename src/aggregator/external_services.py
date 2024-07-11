@@ -3,7 +3,6 @@ import requests
 import structlog
 from google.cloud import language_v1
 
-from aggregator.parser import get_with_max_size
 from config import get_config
 from ext_article_categorization.taxonomy_mapping import (
     EXTERNAL_AUGMENT_CHANNELS,
@@ -28,7 +27,7 @@ def get_popularity_score(_article):
     url = config.bs_pop_endpoint + _article["url"]
 
     try:
-        response = get_with_max_size(url)
+        response = requests.get(url, timeout=config.request_timeout).content
         pop_response = orjson.loads(response)
         pop_score = pop_response.get("popularity", {}).get("popularity", {}) or 1.0
         pop_score_agg = sum(pop_score.values())

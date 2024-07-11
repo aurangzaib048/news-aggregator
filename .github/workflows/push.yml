@@ -16,7 +16,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
       - name: Install ubuntu dependencies
         run: |
           sudo apt-get update -qq
@@ -38,4 +38,4 @@ jobs:
           role-to-assume: ${{ secrets.GDBP_AWS_IAM_ROLE_ARN }}
           aws-region: us-west-2
       - name: Generalized Deployments
-        uses: brave-intl/general-docker-build-pipeline-action@00750bfc214d1b4e36dc701899c727481bd3eab3 # v1.0.14
+        uses: brave-intl/general-docker-build-pipeline-action@6deb4a24909bd8f637aec7a97a8022b9e598b291 # v1.0.15

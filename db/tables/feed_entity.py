@@ -18,8 +18,9 @@ class FeedEntity(Base):
     __table_args__ = {"schema": "news"}
 
     id = Column(BigInteger, primary_key=True, server_default=func.id_gen())
+    name = Column(String, nullable=False, index=True)
     url = Column(String, nullable=False, index=True)
-    url_hash = Column(String, nullable=False, unique=True, index=True)
+    url_hash = Column(String, nullable=False, index=True)
     publisher_id = Column(
         BigInteger, ForeignKey("publisher.id"), nullable=False, index=True
     )
@@ -41,6 +42,7 @@ class FeedEntity(Base):
             "id": self.id,
             "url": self.url,
             "url_hash": self.url_hash,
+            "name": self.name,
             "publisher_id": self.publisher_id,
             "category": self.category,
             "enabled": self.enabled,
@@ -52,6 +54,7 @@ class FeedEntity(Base):
         return {
             "url": self.url,
             "url_hash": self.url_hash,
+            "name": self.name,
             "publisher_id": self.publisher_id,
             "category": self.category,
             "enabled": self.enabled,

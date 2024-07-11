@@ -28,6 +28,7 @@ def upgrade() -> None:
         ),
         sa.Column("url", sa.VARCHAR, nullable=False),
         sa.Column("url_hash", sa.VARCHAR, nullable=False),
+        sa.Column("name", sa.VARCHAR, nullable=False),
         sa.Column(
             "publisher_id",
             sa.BigInteger,
@@ -54,16 +55,20 @@ def upgrade() -> None:
         info={"ifexists": True},
     )
     op.create_index(
-        "feed_idx_url_hash", "feed", ["url_hash"], unique=True, if_not_exists=True
+        "feed_idx_url_hash", "feed", ["url_hash"], unique=False, if_not_exists=True
     )
     op.create_index(
         "idx_publisher_id", "feed", ["publisher_id"], unique=False, if_not_exists=True
     )
+    op.create_index(
+        "idx_name_hash", "feed", ["url_hash", "name"], unique=True, if_not_exists=True
+    )
 
 
 def downgrade() -> None:
-    op.drop_index("idx_publisher_id", table_name="feed", if_exists=True)
     op.drop_index("feed_idx_url_hash", table_name="feed", if_exists=True)
+    op.drop_index("idx_name_hash", table_name="feed", if_exists=True)
+    op.drop_index("idx_publisher_id", table_name="feed", if_exists=True)
     op.drop_table(
         "feed",
         info={"ifexists": True},
