@@ -15,7 +15,7 @@ html2text==2024.2.26
 metadata-parser==0.12.1
 numpy==1.22.2
 orjson==3.10.6
-Pillow==10.4.0
+Pillow==10.3.0
 prometheus_client==0.20.0
 psycopg2==2.9.9
 pydantic==1.10.17
