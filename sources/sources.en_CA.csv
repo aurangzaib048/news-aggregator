@@ -50,7 +50,7 @@ https://www.wsj.com,https://feeds.a.dj.com/rss/RSSWorldNews.xml,WSJ World News,W
 https://www.usnews.com,https://www.usnews.com/rss/news,U.S. News & World Report,World News,Disabled,,,article,,www.usnews.com,World News,48,
 https://www.thespruce.com,https://www.thespruce.com/feeds/google-news,The Spruce,Home,Enabled,,,article,,www.thespruce.com,Home; Top Sources,49,
 https://www.tomshardware.com,https://www.tomshardware.com/feeds/all,Tom's Hardware,Technology,Enabled,,,article,,www.tomshardware.com,Technology,50,
-https://www.frontiersin.org,https://blog.frontiersin.org/feed/,Frontiers In,Science,Disabled,,,article,,blog.frontiersin.org,Science; Top Sources,51,
+https://www.frontiersin.org,https://www.frontiersin.org/news/rss,Frontiers In,Science,Disabled,,,article,,blog.frontiersin.org,Science; Top Sources,51,https://blog.frontiersin.org/feed/
 https://www.variety.com,https://variety.com/feed/,Variety,Entertainment,Disabled,,,article,,variety.com,Entertainment; Top Sources,52,https://feeds.feedburner.com/variety/headlines
 http://www.nationalpost.com,https://nationalpost.com/feed/,National Post,Top News,Disabled,,,article,,nationalpost.com,Top News,53,
 https://www.nypost.com,https://nypost.com/us-news/feed,New York Post,Top News,Disabled,,,article,,nypost.com,Top News,54,https://nypost.com/news/feed
