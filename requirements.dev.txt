@@ -2,7 +2,7 @@
 bandit==1.7.9
 black==24.4.2
 bpython==0.24
-flake8==7.0.0
+flake8==7.1.0
 isort==5.13.2
 moto==5.0.10
 pip-check-reqs==2.5.3
