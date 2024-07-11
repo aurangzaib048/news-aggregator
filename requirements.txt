@@ -14,7 +14,7 @@ googleapis-common-protos==1.63.2
 html2text==2024.2.26
 metadata-parser==0.12.1
 numpy==1.22.2
-orjson==3.10.3
+orjson==3.10.6
 Pillow==10.3.0
 prometheus_client==0.20.0
 psycopg2==2.9.9
