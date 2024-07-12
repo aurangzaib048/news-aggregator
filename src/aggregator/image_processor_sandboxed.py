@@ -17,7 +17,11 @@ from wasmer_compiler_cranelift import Compiler
 from config import get_config
 from utils import upload_file
 
-ua = UserAgent(browsers=["edge", "chrome", "firefox", "safari", "opera"])
+ua = UserAgent(
+    browsers=["edge", "chrome", "firefox", "safari", "opera"],
+    os=["windows", "macos", "linux"],
+    platforms=["pc"],
+)
 
 config = get_config()
 

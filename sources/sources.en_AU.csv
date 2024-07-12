@@ -37,7 +37,7 @@ https://www.gamesradar.com,https://www.gamesradar.com/rss.xml,Games Radar,Gaming
 https://www.bloomberg.com,https://www.bloomberg.com/view/rss,Bloomberg,Business,Enabled,,,article,,bloomberg.com,Business,35,
 https://www.digitaltrends.com,https://www.digitaltrends.com/feed/,Digital Trends,Technology,Enabled,,,article,,digitaltrends.com,Technology,36,
 https://www.cnbc.com,https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100727362,CNBC,Business,Enabled,,,article,,cnbc.com,Business,37,
-https://www.oup.com,https://blog.oup.com/feed/,Oxford University Press,Education,Enabled,,,article,,oup.com,Education,38,
+https://www.oup.com,https://feeds.feedblitz.com/oupblog,Oxford University Press,Education,Enabled,,,article,,oup.com,Education,38,https://blog.oup.com/feed/
 https://www.rogerebert.com,https://www.rogerebert.com/feed,Roger Ebert,Movies,Enabled,,,article,,rogerebert.com,Entertainment,39,
 https://www.nature.com,https://feeds.nature.com/nature/rss/current,Nature,Science,Enabled,,,article,,nature.com,Top Sources; Science,40,
 https://www.tomshardware.com,https://www.tomshardware.com/feeds/all,Tom's Hardware,Technology,Enabled,,,article,,tomshardware.com,Technology,41,
@@ -83,7 +83,7 @@ https://www.npr.org,https://feeds.npr.org/1001/rss.xml,NPR,Top News,Enabled,,,ar
 https://www.towardsdatascience.com,https://towardsdatascience.com/feed,Towards Data Science,Technology,Enabled,,,article,,towardsdatascience.com,Technology,81,
 https://www.nme.com,https://www.nme.com/feed,NME,Music,Enabled,,,article,,nme.com,Entertainment,82,
 https://www.vox.com,https://www.vox.com/rss/index.xml,Vox,Top News,Enabled,,,article,,vox.com,Culture,83,
-https://www.newyorker.com,https://www.newyorker.com/feed/everything,The New Yorker,Lifestyle,Enabled,,,article,,newyorker.com,Culture,84,
+https://www.newyorker.com,https://www.newyorker.com/feed/rss,The New Yorker,Lifestyle,Enabled,,,article,,newyorker.com,Culture,84,https://www.newyorker.com/feed/everything
 https://www.thespruceeats.com,https://www.thespruceeats.com/feeds/google-news,The Spruce Eats,Food,Enabled,,,article,,thespruceeats.com,Food,85,
 https://www.zerohedge.com,https://feeds.feedburner.com/zerohedge/feed,Zerohedge,Business,Enabled,,,article,,zerohedge.com,Business,86,
 https://www.heraldsun.com.au,https://www.heraldsun.com.au/rss,Herald Sun,Top News,Enabled,,,article,,heraldsun.com.au,Top News,87,

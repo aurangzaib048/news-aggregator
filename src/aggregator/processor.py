@@ -32,7 +32,11 @@ from db_crud import get_article
 logger = structlog.getLogger(__name__)
 
 config = get_config()
-ua = UserAgent(browsers=["edge", "chrome", "firefox", "safari", "opera"])
+ua = UserAgent(
+    browsers=["edge", "chrome", "firefox", "safari", "opera"],
+    os=["windows", "macos", "linux"],
+    platforms=["pc"],
+)
 
 
 def process_articles(article, _publisher, feed_info):  # noqa: C901
