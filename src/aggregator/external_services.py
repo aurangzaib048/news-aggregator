@@ -205,12 +205,18 @@ def get_external_channels_for_article(article):
     if external_categories:
         tiered_channels = get_channels_for_classification(external_categories)
     else:
-        tiered_channels = []
+        tiered_channels = {}
 
     active_channels = set()
-    for channel in tiered_channels["tier_1"] + tiered_channels["tier_2"]:
-        if channel in FLAT_ACTIVE_TAXONOMY:
-            active_channels.add(channel)
+
+    try:
+        for channel in tiered_channels.get("tier_1", []) + tiered_channels.get(
+            "tier_2", []
+        ):
+            if channel in FLAT_ACTIVE_TAXONOMY:
+                active_channels.add(channel)
+    except Exception as e:
+        logger.error(e)
 
     # If article in augmented channels, only replace non-augmented channels with predicted channel
     to_augment = set(article["channels"]).intersection(EXTERNAL_AUGMENT_CHANNELS)
