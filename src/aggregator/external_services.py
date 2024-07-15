@@ -202,14 +202,13 @@ def get_external_channels_for_article(article):
         article["title"] + " " + article["description"]
     )
 
-    if external_categories:
-        tiered_channels = get_channels_for_classification(external_categories)
-    else:
-        tiered_channels = {}
-
     active_channels = set()
 
     try:
+        if external_categories:
+            tiered_channels = get_channels_for_classification(external_categories)
+        else:
+            tiered_channels = {}
         for channel in tiered_channels.get("tier_1", []) + tiered_channels.get(
             "tier_2", []
         ):
