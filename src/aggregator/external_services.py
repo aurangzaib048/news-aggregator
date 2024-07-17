@@ -5,9 +5,17 @@ from google.cloud import language_v1
 
 from config import get_config
 from ext_article_categorization.taxonomy_mapping import get_channels_for_classification
+from utils import RateLimiter
 
 config = get_config()
 logger = structlog.getLogger(__name__)
+
+rate_limiter = RateLimiter(config.rate_limit)
+
+
+@rate_limiter
+def limited_request(method, url, **kwargs):
+    return requests.request(method, url, **kwargs)
 
 
 def get_popularity_score(_article):
@@ -23,7 +31,7 @@ def get_popularity_score(_article):
     url = config.bs_pop_endpoint + _article["url"]
 
     try:
-        response = requests.get(url, timeout=config.request_timeout).content
+        response = limited_request("GET", url, timeout=config.request_timeout).content
         pop_response = orjson.loads(response)
         pop_score = pop_response.get("popularity", {}).get("popularity", {}) or 1.0
         pop_score_agg = sum(pop_score.values())

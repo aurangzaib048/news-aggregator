@@ -6,7 +6,9 @@
 import logging
 import mimetypes
 import re
+import threading
 import time
+from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import urlparse
@@ -248,3 +250,23 @@ def push_metrics_to_pushgateway(metric, metric_value, label_value, registry):
 
     except Exception as e:
         logger.error(f"Failed to push metrics: {e}")
+
+
+class RateLimiter:
+    def __init__(self, max_per_second):
+        self.lock = threading.Lock()
+        self.min_interval = 1.0 / float(max_per_second)
+        self.last_time_called = 0.0
+
+    def __call__(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            with self.lock:
+                elapsed = time.perf_counter() - self.last_time_called
+                left_to_wait = self.min_interval - elapsed
+                if left_to_wait > 0:
+                    time.sleep(left_to_wait)
+                self.last_time_called = time.perf_counter()
+            return func(*args, **kwargs)
+
+        return wrapper

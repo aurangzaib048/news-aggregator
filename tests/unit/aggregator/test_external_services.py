@@ -8,7 +8,7 @@ class TestGetPopularityScore:
     # Successfully retrieves popularity score for an article.
     def test_retrieves_popularity_score(self, mocker):
         # Mock the get_with_max_size function to return a sample response
-        mock_get = mocker.patch("requests.get")
+        mock_get = mocker.patch("requests.request")
         mock_get.return_value.content = (
             b'{"popularity": {"popularity": {"score1": 1, "score2": 2}}}'
         )
