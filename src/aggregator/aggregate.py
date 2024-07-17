@@ -140,6 +140,7 @@ class Aggregator:
         raw_entries = []
         entries = []
         processed_articles = []
+        processed_raw_articles = []
         self.report["feed_stats"] = {}
 
         feed_cache = self.download_feeds()
@@ -175,11 +176,13 @@ class Aggregator:
                 if result:
                     entries.append(result)
                 if processed_article:
-                    processed_articles.append(processed_article)
+                    processed_raw_articles.append(processed_article)
 
         raw_entries.clear()
 
-        logger.info(f"Getting the Popularity score the URL of {len(entries)}")
+        logger.info(
+            f"Getting the Popularity score of new article the URL of {len(entries)}"
+        )
         with ThreadPool(config.thread_pool_size) as pool:
             for result in pool.imap_unordered(get_popularity_score, entries):
                 if not result:
@@ -188,6 +191,20 @@ class Aggregator:
 
         if raw_entries:
             self.normalize_pop_score(raw_entries)
+
+        logger.info(
+            f"Getting the Popularity score of old article the URL of {len(processed_raw_articles)}"
+        )
+        with ThreadPool(config.thread_pool_size) as pool:
+            for result in pool.imap_unordered(
+                get_popularity_score, processed_raw_articles
+            ):
+                if not result:
+                    continue
+                processed_articles.append(result)
+
+        if processed_articles:
+            self.normalize_pop_score(processed_articles)
 
         if str(config.sources_file) == "sources.en_US":
             entries.clear()
