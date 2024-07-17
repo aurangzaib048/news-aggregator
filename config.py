@@ -41,6 +41,7 @@ class Configuration(BaseSettings):
     # Set the number of processes to spawn for all multiprocessing tasks.
     concurrency: int = cpu_count() - 1
     thread_pool_size: int = cpu_count() * 5
+    rate_limit: int = 25
 
     # Disable uploads and downloads to S3. Useful when running locally or in CI.
     no_upload: Optional[str] = None
