@@ -33,10 +33,12 @@ async def get_articles(
 
 
 class ArticleRequestCS(BaseModel):
-    start_datetime: str = (datetime.utcnow() - timedelta(hours=2)).strftime(
+    start_datetime: str = (datetime.utcnow() - timedelta(days=7)).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
     locale: str
+    page: int = 1
+    page_size: int = 100
 
 
 @router.post("/api/articles_with_locale", response_model=List[dict])

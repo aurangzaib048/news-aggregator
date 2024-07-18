@@ -3,7 +3,6 @@ import re
 from copy import deepcopy
 from datetime import datetime, time
 
-import pytz
 import structlog
 from sqlalchemy import and_, func
 
@@ -262,7 +261,7 @@ def get_publisher_with_locale(publisher_url):
         return []
 
 
-def get_feeds_based_on_locale(locale):
+def get_publishers_based_on_locale(locale):
     data = []
     try:
         with config.get_db_session() as session:
@@ -273,21 +272,16 @@ def get_feeds_based_on_locale(locale):
                 )
                 .all()
             )
-            locale = session.query(LocaleEntity).filter_by(locale=locale).first()
 
             for feed in feeds:
                 channels = []
-                feed_locales = (
-                    session.query(FeedLocaleEntity)
-                    .filter_by(feed_id=feed.id, locale_id=locale.id)
-                    .all()
-                )
-                for feed_locale in feed_locales:
-                    channels.extend(
-                        session.query(ChannelEntity)
-                        .join(feed_locale_channel)
-                        .filter_by(feed_locale_id=feed_locale.id)
-                        .all()
+                for feed_locale in [
+                    locale_model
+                    for locale_model in feed.locales
+                    if locale_model.locale.name == locale
+                ]:
+                    channels = list(
+                        set([channel.name for channel in feed_locale.channels])
                     )
 
                 publisher_data = {
@@ -301,7 +295,7 @@ def get_feeds_based_on_locale(locale):
                     "background_color": feed.publisher.background_color,
                     "score": feed.publisher.score,
                     "publisher_id": feed.url_hash,
-                    "channels": list(set([channel.name for channel in channels])),
+                    "channels": list(set(channels)),
                 }
 
                 data.append(publisher_data)
@@ -796,21 +790,29 @@ def get_locales():
         return []
 
 
-def get_articles_with_locale(locale, start_datetime):
+def get_articles_with_locale(
+    locale, start_datetime, page: int = 1, page_size: int = 100
+):
     try:
         with config.get_db_session() as session:
-            locale = session.query(LocaleEntity).filter_by(locale=locale).first()
+            locale_entity = session.query(LocaleEntity).filter_by(locale=locale).first()
+            if not locale_entity:
+                raise ValueError(f"Locale {locale} not found in the database.")
+
+            offset = (page - 1) * page_size
+
             articles = (
                 session.query(ArticleEntity)
                 .join(FeedEntity)
                 .join(FeedLocaleEntity)
                 .filter(
-                    FeedLocaleEntity.locale_id == locale.id,
+                    FeedLocaleEntity.locale_id == locale_entity.id,
                     ArticleEntity.created >= start_datetime,
                 )
                 .distinct()
                 .order_by(ArticleEntity.created.desc())
-                .limit(100)
+                .offset(offset)
+                .limit(page_size)
                 .all()
             )
 
@@ -818,9 +820,7 @@ def get_articles_with_locale(locale, start_datetime):
             for article in articles:
                 article_data = {
                     "title": article.title,
-                    "publish_time": article.publish_time.astimezone(pytz.utc).strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    ),
+                    "publish_time": article.publish_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "img": article.img,
                     "category": article.category,
                     "description": article.description,

@@ -1,11 +1,11 @@
 import re
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel
 
 from api.utils import ep_err_msg, request_auth
-from db_crud import get_feeds_based_on_locale, get_publisher_with_locale
+from db_crud import get_publisher_with_locale, get_publishers_based_on_locale
 
 router = APIRouter(
     responses={status.HTTP_404_NOT_FOUND: {"Description": ep_err_msg}},
@@ -16,19 +16,12 @@ router = APIRouter(
 @router.post("/api/publisher", response_model=List[dict])
 async def read_publisher(
     publisher_url: str = Query(..., description="Publisher URL"),
-    locale: Optional[str] = Query(
-        default=None,
-        max_length=5,
-        min_length=5,
-        description="Locale information",
-        regex="[a-z]{2}_[A-Z]{2}",
-    ),
 ):
-    publishers = get_publisher_with_locale(publisher_url, locale)
-    return publishers
+    publisher = get_publisher_with_locale(publisher_url)
+    return publisher
 
 
-@router.get("/api/publisher_with_locale", response_model=List[dict])
+@router.get("/api/publishers_with_locale", response_model=List[dict])
 async def read_publisher_with_locale(
     locale: str = Query(
         ...,
@@ -38,7 +31,7 @@ async def read_publisher_with_locale(
         regex="[a-z]{2}_[A-Z]{2}",
     )
 ):
-    publishers = get_feeds_based_on_locale(locale)
+    publishers = get_publishers_based_on_locale(locale)
     return publishers
 
 
@@ -60,7 +53,7 @@ async def read_publisher_id_with_locale(request: PublisherRequest):
     channels_to_include = request.channels_to_include
 
     relevant_publishers = []
-    publishers = get_feeds_based_on_locale(locale)
+    publishers = get_publishers_based_on_locale(locale)
     for source in publishers:
         if source["publisher_name"] in publisher_blocklist:
             continue
