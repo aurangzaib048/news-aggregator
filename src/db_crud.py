@@ -719,7 +719,7 @@ def insert_aggregation_stats(id, start_time, locale_name):
             session.add(aggregation_stats)
             session.commit()
             session.refresh(aggregation_stats)
-            return aggregation_stats.id  # Return the ID of the inserted row
+            return aggregation_stats.id
     except Exception as e:
         logger.error(f"Error Connecting to database: {e}")
         return None

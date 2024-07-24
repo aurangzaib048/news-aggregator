@@ -10,7 +10,7 @@ import structlog
 
 from aggregator.aggregate import Aggregator
 from config import get_config
-from db_crud import get_channels, insert_article
+from db_crud import get_channels, insert_article, update_aggregation_stats
 from utils import upload_file
 
 config = get_config()
@@ -66,3 +66,7 @@ if __name__ == "__main__":
 
     with open(config.output_path / "report.json", "w") as f:
         f.write(json.dumps(fp.report))
+
+    # Store remaining aggregation stats
+    processing_time_in_seconds = (datetime.datetime.now() - fp.start_time).total_seconds()
+    update_aggregation_stats(aggregation_id=fp.aggregation_id, run_time=processing_time_in_seconds, success=True )
