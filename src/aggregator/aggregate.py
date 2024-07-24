@@ -4,8 +4,9 @@ from functools import partial
 from multiprocessing import Pool as ProcessPool
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-
+import uuid
 import orjson
+import datetime
 import structlog
 
 from aggregator.external_services import (
@@ -34,6 +35,11 @@ class Aggregator:
         self.feeds = defaultdict(dict)
         self.publishers: dict = _publishers
         self.output_path: Path = _output_path
+        self.start_time = datetime.datetime.now()
+        self.locale_name = str(config.sources_file).replace("sources.", "")
+        self.aggregation_id = uuid.uuid4()
+        logger.info(f"{self.start_time} - Starting aggregation with id {self.aggregation_id} for locale {self.locale_name}")
+        insert_aggregation_stats(self.aggregation_id, self.start_time, self.locale_name)
 
     def check_images(self, items):
         """
@@ -257,11 +263,10 @@ class Aggregator:
 
         logger.info("Insert articles into the database.")
         locale_name = str(config.sources_file).replace("sources.", "")
+        
         with ThreadPool(config.thread_pool_size) as pool:
-            pool.map(
-                partial(update_or_insert_article, locale=locale_name),
-                filtered_entries,
-            )
+            fn = (lambda entry: update_or_insert_article(entry, locale=locale_name, aggregation_id=self.aggregation_id), filtered_entries)
+            pool.map(fn)
 
         # Getting external channels for articles
         if str(config.sources_file) == "sources.en_US":
@@ -287,3 +292,4 @@ class Aggregator:
         with open(self.output_path, "wb") as _f:
             feeds = self.aggregate_rss()
             _f.write(orjson.dumps(feeds))
+        

@@ -20,6 +20,7 @@ from db.tables.feed_locales_entity import FeedLocaleEntity
 from db.tables.feed_update_record_entity import FeedUpdateRecordEntity
 from db.tables.locales_entity import LocaleEntity
 from db.tables.publsiher_entity import PublisherEntity
+from db.tables.aggregation_stats_entity import AggregationStatsEntity
 
 config = get_config()
 logger = structlog.getLogger(__name__)
@@ -319,7 +320,7 @@ def insert_cache_record(article_id, locale):
         logger.error(f"Error Connecting to database: {e}")
 
 
-def insert_article(article, locale_name):
+def insert_article(article, locale_name, aggregation_id):
     try:
         with config.get_db_session() as db_session:
             try:
@@ -340,7 +341,7 @@ def insert_article(article, locale_name):
                     .first()
                 )
                 if db_article:
-                    insert_cache_record(db_article.id, locale_name)
+                    insert_cache_record(db_article.id, locale_name, aggregation_id)
                     logger.info(f"Updated article {article.get('title')} to database")
                 else:
                     new_article = ArticleEntity(
@@ -357,12 +358,13 @@ def insert_article(article, locale_name):
                         padded_img=article.get("padded_img"),
                         score=article.get("score"),
                         feed_id=feed.id,
+                        aggregation_id=aggregation_id,
                     )
                     db_session.add(new_article)
                     db_session.commit()
                     db_session.refresh(new_article)
 
-                    insert_cache_record(new_article.id, locale_name)
+                    insert_cache_record(new_article.id, locale_name, aggregation_id)
 
                     logger.info(f"Saved new article {article.get('title')} to database")
             except Exception as e:
@@ -438,7 +440,7 @@ def get_article(url_hash, locale_name):
         return None
 
 
-def update_or_insert_article(article_data, locale):
+def update_or_insert_article(article_data, locale, aggregation_id):
     try:
         with config.get_db_session() as session:
             article_hash = article_data.get("url_hash")
@@ -460,7 +462,7 @@ def update_or_insert_article(article_data, locale):
                 session.refresh(article)
 
             else:
-                insert_article(article_data, locale)
+                insert_article(article_data, locale, aggregation_id)
 
     except Exception as e:
         logger.error(f"Error Connecting to database: {e}")
@@ -706,6 +708,38 @@ def get_channels():
         logger.error(f"Error Connecting to database: {e}")
         return []
 
+def insert_aggregation_stats(id, start_time, locale_name):
+    try:
+        with config.get_db_session() as session:
+            aggregation_stats = AggregationStatsEntity(
+                id=id,
+                start_time=start_time,
+                locale_name=locale_name,
+            )
+            session.add(aggregation_stats)
+            session.commit()
+            session.refresh(aggregation_stats)
+            return aggregation_stats.id  # Return the ID of the inserted row
+    except Exception as e:
+        logger.error(f"Error Connecting to database: {e}")
+        return None
+    
+def update_aggregation_stats(id, run_time, success):
+    try:
+        with config.get_db_session() as session:
+            aggregation_stats = session.query(AggregationStatsEntity).filter_by(id=id).first()
+            if aggregation_stats:
+                aggregation_stats.run_time = run_time
+                aggregation_stats.success = success
+                session.commit()
+                session.refresh(aggregation_stats)
+                return aggregation_stats.id
+            else:
+                logger.error(f"Record with id {id} not found")
+                return None
+    except Exception as e:
+        logger.error(f"Error Connecting to database: {e}")
+        return None
 
 if __name__ == "__main__":
     insert_or_update_all_publishers()

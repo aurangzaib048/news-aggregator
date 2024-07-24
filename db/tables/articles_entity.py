@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Column, DateTime, Float, ForeignKey, String, func
+from sqlalchemy import BigInteger, Column, DateTime, Float, ForeignKey, String, func, UUID
 from sqlalchemy.orm import relationship
 
 from db.tables.base import Base
@@ -22,6 +22,7 @@ class ArticleEntity(Base):
     padded_img = Column(String, default="", nullable=False)
     score = Column(Float, default=0.0, nullable=False)
     created = Column(DateTime, nullable=False, server_default=func.now())
+    aggregation_id = Column(UUID(as_uuid=True), ForeignKey("aggregation_stats.id"), default="", nullable=True)
     modified = Column(
         DateTime,
         nullable=False,
@@ -71,6 +72,7 @@ class ArticleEntity(Base):
             "pop_score": self.pop_score,
             "padded_img_url": self.padded_img,
             "score": self.score,
+            "aggregation_id": self.aggregation_id,
         }
 
     def __str__(self):

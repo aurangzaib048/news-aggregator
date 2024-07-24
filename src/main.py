@@ -1,5 +1,7 @@
 import json
+import uuid
 import shutil
+import datetime
 from functools import partial
 from multiprocessing.pool import ThreadPool
 
@@ -15,6 +17,7 @@ config = get_config()
 logger = structlog.getLogger(__name__)
 
 if __name__ == "__main__":
+
     feed_sources = config.output_path / config.feed_sources_path
 
     with open(feed_sources) as f:
@@ -54,10 +57,12 @@ if __name__ == "__main__":
     with open(config.output_feed_path / f"{config.feed_path}.json", "r") as f:
         articles = orjson.loads(f.read())
         locale_name = str(config.sources_file).replace("sources.", "")
+        aggregation_id = fp.aggregation_id
         logger.info(f"Feed has {len(articles)} items to insert.")
+
         with ThreadPool(config.thread_pool_size) as pool:
-            pool.map(partial(insert_article, locale_name=locale_name), articles)
-        logger.info("Inserted articles into the database.")
+            fn = (lambda article: insert_article(article, locale_name=locale_name, aggregation_id=aggregation_id), articles)
+            pool.map(fn)
 
     with open(config.output_path / "report.json", "w") as f:
         f.write(json.dumps(fp.report))
