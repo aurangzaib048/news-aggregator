@@ -23,7 +23,7 @@ from aggregator.image_processor_sandboxed import get_image_with_max_size
 from aggregator.parser import download_feed, parse_rss, score_entries
 from aggregator.processor import process_articles, scrub_html, unshorten_url
 from config import get_config
-from db_crud import insert_external_channels, update_or_insert_article
+from db_crud import insert_external_channels, update_or_insert_article, insert_aggregation_stats
 
 config = get_config()
 logger = structlog.get_logger()
