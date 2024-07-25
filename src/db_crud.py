@@ -161,6 +161,7 @@ def insert_feed_locale(session, feed_id, locale_id, rank):
 
 
 def insert_or_update_all_publishers():
+    logger.info("insert_or_update_all_publishers")
     """
     Insert or update all publishers in the database
     """
@@ -300,7 +301,7 @@ def get_feeds_based_on_locale(locale):
         return data
 
 
-def insert_cache_record(article_id, locale):
+def insert_cache_record(article_id, locale, aggregation_id):
     try:
         with config.get_db_session() as session:
             locale = session.query(LocaleEntity).filter_by(locale=locale).first()
@@ -311,7 +312,7 @@ def insert_cache_record(article_id, locale):
             )
             if not db_article_cache_record:
                 article_cache_record = ArticleCacheRecordEntity(
-                    article_id=article_id, locale_id=locale.id
+                    article_id=article_id, locale_id=locale.id, aggregation_id=aggregation_id
                 )
                 session.add(article_cache_record)
                 session.commit()
@@ -340,6 +341,7 @@ def insert_article(article, locale_name, aggregation_id):
                     .filter_by(url_hash=article_hash)
                     .first()
                 )
+                    #  logger all the full db article
                 if db_article:
                     insert_cache_record(db_article.id, locale_name, aggregation_id)
                     logger.info(f"Updated article {article.get('title')} to database")
@@ -441,12 +443,14 @@ def get_article(url_hash, locale_name):
 
 
 def update_or_insert_article(article_data, locale, aggregation_id):
+    logger.info(f"update_or_insert_article")
     try:
         with config.get_db_session() as session:
             article_hash = article_data.get("url_hash")
             article = (
                 session.query(ArticleEntity).filter_by(url_hash=article_hash).first()
             )
+            # if article exists, update it in the database with the new data
             if article:
                 article.title = article_data.get("title")
                 article.publish_time = article_data.get("publish_time")

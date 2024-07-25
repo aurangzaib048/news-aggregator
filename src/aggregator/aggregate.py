@@ -261,12 +261,11 @@ class Aggregator:
 
         filtered_entries = score_entries(sorted_entries)
 
-        logger.info("Insert articles into the database.")
         locale_name = str(config.sources_file).replace("sources.", "")
         
         with ThreadPool(config.thread_pool_size) as pool:
-            fn = (lambda entry: update_or_insert_article(entry, locale=locale_name, aggregation_id=self.aggregation_id), filtered_entries)
-            pool.map(fn)
+            fn = lambda entry: update_or_insert_article(entry, locale=locale_name, aggregation_id=self.aggregation_id)
+            pool.map(fn, filtered_entries)
 
         # Getting external channels for articles
         if str(config.sources_file) == "sources.en_US":

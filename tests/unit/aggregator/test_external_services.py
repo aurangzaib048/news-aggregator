@@ -1,12 +1,15 @@
 from aggregator.external_services import get_popularity_score, get_predicted_channels
 from config import get_config
+import structlog
 
+logger = structlog.get_logger()
 config = get_config()
 
 
 class TestGetPopularityScore:
     # Successfully retrieves popularity score for an article.
     def test_retrieves_popularity_score(self, mocker):
+        logger.info("\n--- test_retrieves_popularity_score ---")
         # Mock the get_with_max_size function to return a sample response
         mock_get = mocker.patch("requests.request")
         mock_get.return_value.content = (
@@ -30,6 +33,7 @@ class TestGetPopularityScore:
 
     # URL is invalid or empty.
     def test_invalid_or_empty_url(self, mocker):
+        logger.info("\n--- test_invalid_or_empty_url ---")
         # Mock the get_with_max_size function to raise an exception
         mocker.patch(
             "aggregator.external_services.requests.get",

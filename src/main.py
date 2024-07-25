@@ -10,7 +10,7 @@ import structlog
 
 from aggregator.aggregate import Aggregator
 from config import get_config
-from db_crud import get_channels, insert_article, update_aggregation_stats
+from db_crud import get_channels, insert_article, update_aggregation_stats, insert_or_update_all_publishers
 from utils import upload_file
 
 config = get_config()
@@ -23,6 +23,7 @@ if __name__ == "__main__":
     with open(feed_sources) as f:
         publishers = orjson.loads(f.read())
         output_path = config.output_feed_path / f"{config.feed_path}.json-tmp"
+        insert_or_update_all_publishers()
 
     fp = Aggregator(publishers, output_path)
     fp.aggregate()
@@ -61,12 +62,12 @@ if __name__ == "__main__":
         logger.info(f"Feed has {len(articles)} items to insert.")
 
         with ThreadPool(config.thread_pool_size) as pool:
-            fn = (lambda article: insert_article(article, locale_name=locale_name, aggregation_id=aggregation_id), articles)
-            pool.map(fn)
+            fn = lambda article: insert_article(article, locale_name=locale_name, aggregation_id=aggregation_id)
+            pool.map(fn, articles)
 
     with open(config.output_path / "report.json", "w") as f:
         f.write(json.dumps(fp.report))
 
     # Store remaining aggregation stats
     processing_time_in_seconds = (datetime.datetime.now() - fp.start_time).total_seconds()
-    update_aggregation_stats(aggregation_id=fp.aggregation_id, run_time=processing_time_in_seconds, success=True )
+    update_aggregation_stats(id=fp.aggregation_id, run_time=processing_time_in_seconds, success=True )

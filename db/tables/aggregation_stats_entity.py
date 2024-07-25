@@ -7,17 +7,15 @@ class AggregationStatsEntity(Base):
     __table_args__ = {"schema": "news"}
 
     # id column should be created at the beginning of the job as a uuid type
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.id_gen())
-    created = Column(DateTime, nullable=False, server_default=func.now())
-    success = Column(Boolean, nullable=False, default=False)
-    run_time = Column(BigInteger, nullable=False)
-    locale_name = Column(String, nullable=False)
-    start_time = Column(DateTime, nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    success = Column(Boolean, default=False)
+    run_time = Column(BigInteger)
+    locale_name = Column(String)
+    start_time = Column(DateTime)
 
     def to_dict(self) -> dict:
         return {
             "id": self.id,
-            "created": self.created,
             "run_time": self.run_time,
             "locale_name": self.locale_name,
             "start_time": self.start_time,

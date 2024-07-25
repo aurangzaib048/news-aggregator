@@ -35,6 +35,32 @@ To update the favicon urls:
     export PYTHONPATH=$PWD:$PWD/src
     NO_UPLOAD=1 NO_DOWNLOAD=1 python src/favicons_covers/update_favicon_urls.py
 
+### Run local migrations
+In order to run migrations locally update the following:
+
+Set database_url to localhost: 
+https://github.com/brave/news-aggregator/blob/master/config.py#L136
+```
+Optional[str] = "postgres://localhost:5432"
+```
+
+Set db url to localhost: https://github.com/brave/news-aggregator/blob/master/alembic.ini#L9
+```
+sqlalchemy.url = postgresql://localhost:5432
+```
+Then you can run:
+```
+make migrate-up
+# or
+make migrate-down
+```
+
+
+### Tests
+```
+make test
+```
+
 ### Organization
 
 This service organizes as follows:
