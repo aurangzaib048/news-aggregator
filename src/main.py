@@ -1,5 +1,5 @@
 import json
-import uuid
+import time
 import shutil
 import datetime
 from functools import partial
@@ -69,5 +69,7 @@ if __name__ == "__main__":
         f.write(json.dumps(fp.report))
 
     # Store remaining aggregation stats
+    logger.info("storing aggregation stats")
+    time.sleep(8)
     processing_time_in_seconds = (datetime.datetime.now() - fp.start_time).total_seconds()
     update_aggregation_stats(id=fp.aggregation_id, run_time=processing_time_in_seconds, success=True )

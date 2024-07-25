@@ -341,10 +341,11 @@ def insert_article(article, locale_name, aggregation_id):
                     .filter_by(url_hash=article_hash)
                     .first()
                 )
-                    #  logger all the full db article
+                # if the article exists then insert as cache record
                 if db_article:
                     insert_cache_record(db_article.id, locale_name, aggregation_id)
                     logger.info(f"Updated article {article.get('title')} to database")
+                # else if the article does not exist then insert it into both article and cache record tables
                 else:
                     new_article = ArticleEntity(
                         title=article.get("title"),
@@ -728,16 +729,19 @@ def insert_aggregation_stats(id, start_time, locale_name):
         logger.error(f"Error Connecting to database: {e}")
         return None
     
-def update_aggregation_stats(id, run_time, success):
+def update_aggregation_stats(id, run_time=0, success=False, feed_count=0, article_count=0, cache_hit_count=0):
     try:
         with config.get_db_session() as session:
-            aggregation_stats = session.query(AggregationStatsEntity).filter_by(id=id).first()
-            if aggregation_stats:
-                aggregation_stats.run_time = run_time
-                aggregation_stats.success = success
+            record = session.query(AggregationStatsEntity).filter_by(id=id).first()
+            if record:
+                record.run_time = record.run_time or run_time
+                record.success = record.success or success
+                record.feed_count = record.feed_count or feed_count
+                record.article_count = record.article_count or article_count
+                record.cache_hit_count = record.cache_hit_count or cache_hit_count
                 session.commit()
-                session.refresh(aggregation_stats)
-                return aggregation_stats.id
+                session.refresh(record)
+                return record.id
             else:
                 logger.error(f"Record with id {id} not found")
                 return None

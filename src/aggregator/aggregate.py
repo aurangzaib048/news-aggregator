@@ -23,7 +23,7 @@ from aggregator.image_processor_sandboxed import get_image_with_max_size
 from aggregator.parser import download_feed, parse_rss, score_entries
 from aggregator.processor import process_articles, scrub_html, unshorten_url
 from config import get_config
-from db_crud import insert_external_channels, update_or_insert_article, insert_aggregation_stats
+from db_crud import insert_external_channels, update_or_insert_article, insert_aggregation_stats, update_aggregation_stats
 
 config = get_config()
 logger = structlog.get_logger()
@@ -103,6 +103,8 @@ class Aggregator:
                 if not result:
                     continue
                 downloaded_feeds.append(result)
+        # Update the aggregation_stats with the number of feeds downloaded
+        update_aggregation_stats(id=self.aggregation_id, feed_count=len(downloaded_feeds))
 
         with ProcessPool(config.concurrency) as pool:
             for result in pool.imap_unordered(parse_rss, downloaded_feeds):
@@ -173,6 +175,7 @@ class Aggregator:
             logger.debug(
                 f"processed {key} in {round((end_time - start_time) * 1000)} ms"
             )
+        update_aggregation_stats(id=self.aggregation_id, article_count=len(raw_entries))
 
         logger.info(f"Un-shorten the URL of {len(raw_entries)}")
         with ThreadPool(config.thread_pool_size) as pool:

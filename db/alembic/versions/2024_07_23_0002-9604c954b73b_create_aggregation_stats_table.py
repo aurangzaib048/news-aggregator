@@ -25,6 +25,9 @@ def upgrade():
         sa.Column('run_time', sa.BigInteger,  default=0),
         sa.Column('locale_name', sa.String, default=''),
         sa.Column('success', sa.Boolean, default=False),
+        sa.Column('feed_count', sa.BigInteger, default=0),
+        sa.Column('article_count', sa.BigInteger, default=0),
+        sa.Column('cache_hit_count', sa.BigInteger, default=0),
         schema='news'
     )
 

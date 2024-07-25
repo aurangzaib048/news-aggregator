@@ -12,6 +12,9 @@ class AggregationStatsEntity(Base):
     run_time = Column(BigInteger)
     locale_name = Column(String)
     start_time = Column(DateTime)
+    feed_count = Column(BigInteger)
+    article_count = Column(BigInteger)
+    cache_hit_count = Column(BigInteger)
 
     def to_dict(self) -> dict:
         return {
