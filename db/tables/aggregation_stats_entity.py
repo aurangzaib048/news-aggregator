@@ -1,6 +1,7 @@
-from sqlalchemy import BigInteger, Column, DateTime, func, Boolean, UUID, String
+from sqlalchemy import UUID, BigInteger, Boolean, Column, DateTime, String
 
 from db.tables.base import Base
+
 
 class AggregationStatsEntity(Base):
     __tablename__ = "aggregation_stats"
@@ -34,4 +35,3 @@ class AggregationStatsEntity(Base):
 
     def __str__(self):
         return f"aggregation_stats_entity(id={self.id!r})"
-

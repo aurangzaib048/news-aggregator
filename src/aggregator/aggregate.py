@@ -1,12 +1,13 @@
+import datetime
 import time
+import uuid
 from collections import defaultdict
 from functools import partial
 from multiprocessing import Pool as ProcessPool
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-import uuid
+
 import orjson
-import datetime
 import structlog
 
 from aggregator.external_services import (
@@ -23,7 +24,12 @@ from aggregator.image_processor_sandboxed import get_image_with_max_size
 from aggregator.parser import download_feed, parse_rss, score_entries
 from aggregator.processor import process_articles, scrub_html, unshorten_url
 from config import get_config
-from db_crud import insert_external_channels, update_or_insert_article, insert_aggregation_stats, update_aggregation_stats
+from db_crud import (
+    insert_aggregation_stats,
+    insert_external_channels,
+    update_aggregation_stats,
+    update_or_insert_article,
+)
 
 config = get_config()
 logger = structlog.get_logger()
@@ -38,7 +44,9 @@ class Aggregator:
         self.start_time = datetime.datetime.now()
         self.locale_name = str(config.sources_file).replace("sources.", "")
         self.aggregation_id = uuid.uuid4()
-        logger.info(f"{self.start_time} - Starting aggregation with id {self.aggregation_id} for locale {self.locale_name}")
+        logger.info(
+            f"{self.start_time} - Starting aggregation with id {self.aggregation_id} for locale {self.locale_name}"
+        )
         insert_aggregation_stats(self.aggregation_id, self.start_time, self.locale_name)
 
     def check_images(self, items):
@@ -104,7 +112,9 @@ class Aggregator:
                     continue
                 downloaded_feeds.append(result)
         # Update the aggregation_stats with the number of feeds downloaded
-        update_aggregation_stats(id=self.aggregation_id, feed_count=len(downloaded_feeds))
+        update_aggregation_stats(
+            id=self.aggregation_id, feed_count=len(downloaded_feeds)
+        )
 
         with ProcessPool(config.concurrency) as pool:
             for result in pool.imap_unordered(parse_rss, downloaded_feeds):
@@ -265,9 +275,14 @@ class Aggregator:
         filtered_entries = score_entries(sorted_entries)
 
         locale_name = str(config.sources_file).replace("sources.", "")
-        
+
         with ThreadPool(config.thread_pool_size) as pool:
-            fn = lambda entry: update_or_insert_article(entry, locale=locale_name, aggregation_id=self.aggregation_id)
+
+            def fn(entry):
+                return update_or_insert_article(
+                    entry, locale=locale_name, aggregation_id=self.aggregation_id
+                )
+
             pool.map(fn, filtered_entries)
 
         # Getting external channels for articles
@@ -294,4 +309,3 @@ class Aggregator:
         with open(self.output_path, "wb") as _f:
             feeds = self.aggregate_rss()
             _f.write(orjson.dumps(feeds))
-        

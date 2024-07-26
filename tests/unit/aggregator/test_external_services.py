@@ -1,6 +1,7 @@
+import structlog
+
 from aggregator.external_services import get_popularity_score, get_predicted_channels
 from config import get_config
-import structlog
 
 logger = structlog.get_logger()
 config = get_config()

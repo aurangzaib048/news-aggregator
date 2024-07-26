@@ -38,7 +38,7 @@ To update the favicon urls:
 ### Run local migrations
 In order to run migrations locally update the following:
 
-Set database_url to localhost: 
+Set database_url to localhost:
 https://github.com/brave/news-aggregator/blob/master/config.py#L136
 ```
 Optional[str] = "postgres://localhost:5432"
@@ -55,8 +55,7 @@ make migrate-up
 make migrate-down
 ```
 
-
-### Tests
+Running the tests will run the migration
 ```
 make test
 ```

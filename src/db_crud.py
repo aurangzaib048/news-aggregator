@@ -8,6 +8,7 @@ from sqlalchemy import func
 
 from config import get_config
 from csv_to_json import csv_to_dict_db
+from db.tables.aggregation_stats_entity import AggregationStatsEntity
 from db.tables.article_cache_record_entity import ArticleCacheRecordEntity
 from db.tables.articles_entity import ArticleEntity
 from db.tables.base import feed_locale_channel
@@ -20,7 +21,6 @@ from db.tables.feed_locales_entity import FeedLocaleEntity
 from db.tables.feed_update_record_entity import FeedUpdateRecordEntity
 from db.tables.locales_entity import LocaleEntity
 from db.tables.publsiher_entity import PublisherEntity
-from db.tables.aggregation_stats_entity import AggregationStatsEntity
 
 config = get_config()
 logger = structlog.getLogger(__name__)
@@ -312,7 +312,9 @@ def insert_cache_record(article_id, locale, aggregation_id):
             )
             if not db_article_cache_record:
                 article_cache_record = ArticleCacheRecordEntity(
-                    article_id=article_id, locale_id=locale.id, aggregation_id=aggregation_id
+                    article_id=article_id,
+                    locale_id=locale.id,
+                    aggregation_id=aggregation_id,
                 )
                 session.add(article_cache_record)
                 session.commit()
@@ -713,6 +715,7 @@ def get_channels():
         logger.error(f"Error Connecting to database: {e}")
         return []
 
+
 def insert_aggregation_stats(id, start_time, locale_name):
     try:
         with config.get_db_session() as session:
@@ -728,8 +731,11 @@ def insert_aggregation_stats(id, start_time, locale_name):
     except Exception as e:
         logger.error(f"Error Connecting to database: {e}")
         return None
-    
-def update_aggregation_stats(id, run_time=0, success=False, feed_count=0, article_count=0, cache_hit_count=0):
+
+
+def update_aggregation_stats(
+    id, run_time=0, success=False, feed_count=0, article_count=0, cache_hit_count=0
+):
     try:
         with config.get_db_session() as session:
             record = session.query(AggregationStatsEntity).filter_by(id=id).first()
@@ -748,6 +754,7 @@ def update_aggregation_stats(id, run_time=0, success=False, feed_count=0, articl
     except Exception as e:
         logger.error(f"Error Connecting to database: {e}")
         return None
+
 
 if __name__ == "__main__":
     insert_or_update_all_publishers()
