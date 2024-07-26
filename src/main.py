@@ -12,7 +12,6 @@ from config import get_config
 from db_crud import (
     get_channels,
     insert_article,
-    insert_or_update_all_publishers,
     update_aggregation_stats,
 )
 from utils import upload_file
@@ -26,7 +25,6 @@ if __name__ == "__main__":
     with open(feed_sources) as f:
         publishers = orjson.loads(f.read())
         output_path = config.output_feed_path / f"{config.feed_path}.json-tmp"
-        insert_or_update_all_publishers()
 
     fp = Aggregator(publishers, output_path)
     fp.aggregate()
