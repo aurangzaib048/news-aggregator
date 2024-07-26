@@ -55,7 +55,7 @@ make migrate-up
 make migrate-down
 ```
 
-Running the tests will run the migration
+Running the tests will run the aggregator
 ```
 make test
 ```
