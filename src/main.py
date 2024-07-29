@@ -9,11 +9,7 @@ import structlog
 
 from aggregator.aggregate import Aggregator
 from config import get_config
-from db_crud import (
-    get_channels,
-    insert_article,
-    update_aggregation_stats,
-)
+from db_crud import get_channels, insert_article, update_aggregation_stats
 from utils import upload_file
 
 config = get_config()
