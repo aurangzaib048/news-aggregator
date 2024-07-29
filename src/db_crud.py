@@ -301,9 +301,9 @@ def get_feeds_based_on_locale(locale):
         return data
 
 
-def insert_cache_record(article_id, locale, aggregation_id):
+def insert_cache_record(article_id, locale, aggregation_id, db_session=None):
     try:
-        with config.get_db_session() as session:
+        with db_session or config.get_db_session() as session:
             locale = session.query(LocaleEntity).filter_by(locale=locale).first()
             db_article_cache_record = (
                 session.query(ArticleCacheRecordEntity)
@@ -323,9 +323,9 @@ def insert_cache_record(article_id, locale, aggregation_id):
         logger.error(f"Error Connecting to database: {e}")
 
 
-def insert_article(article, locale_name, aggregation_id):
+def insert_article(article, locale_name, aggregation_id, db_session=None):
     try:
-        with config.get_db_session() as db_session:
+        with db_session or config.get_db_session() as db_session:
             try:
                 feed = (
                     db_session.query(FeedEntity)
@@ -345,7 +345,9 @@ def insert_article(article, locale_name, aggregation_id):
                 )
                 # if the article exists then insert as cache record
                 if db_article:
-                    insert_cache_record(db_article.id, locale_name, aggregation_id)
+                    insert_cache_record(
+                        db_article.id, locale_name, aggregation_id, db_session
+                    )
                     logger.info(f"Updated article {article.get('title')} to database")
                 # else if the article does not exist then insert it into both article and cache record tables
                 else:
@@ -369,7 +371,9 @@ def insert_article(article, locale_name, aggregation_id):
                     db_session.commit()
                     db_session.refresh(new_article)
 
-                    insert_cache_record(new_article.id, locale_name, aggregation_id)
+                    insert_cache_record(
+                        new_article.id, locale_name, aggregation_id, db_session
+                    )
 
                     logger.info(f"Saved new article {article.get('title')} to database")
             except Exception as e:

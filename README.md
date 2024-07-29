@@ -37,8 +37,9 @@ To update the favicon urls:
 ```
 Populate DB with publisher data (channels, feeds, locales, publishers)
 ```sh
-# calls insert_or_update_all_publishers()
-python -u src/db_crud.py
+    # calls insert_or_update_all_publishers()
+    export PYTHONPATH=$PWD:$PWD/src
+    python -u src/db_crud.py
 ```
 
 #### Run local migrations

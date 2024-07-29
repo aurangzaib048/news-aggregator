@@ -1,8 +1,6 @@
 import datetime
 import json
 import shutil
-import time
-from multiprocessing.pool import ThreadPool
 
 import orjson
 import structlog
@@ -57,25 +55,26 @@ if __name__ == "__main__":
         locale_name = str(config.sources_file).replace("sources.", "")
         aggregation_id = fp.aggregation_id
         logger.info(f"Feed has {len(articles)} items to insert.")
-
-        with ThreadPool(config.thread_pool_size) as pool:
-
-            def fn(article):
-                return insert_article(
-                    article, locale_name=locale_name, aggregation_id=aggregation_id
-                )
-
-            pool.map(fn, articles)
+        db_session = config.get_db_session()
+        # for each article, insert into the database, do not use threads
+        for article in articles:
+            insert_article(
+                article,
+                locale_name=locale_name,
+                aggregation_id=aggregation_id,
+                db_session=db_session,
+            )
 
     with open(config.output_path / "report.json", "w") as f:
         f.write(json.dumps(fp.report))
 
     # Store remaining aggregation stats
     logger.info("storing aggregation stats")
-    time.sleep(8)
     processing_time_in_seconds = (
         datetime.datetime.now() - fp.start_time
     ).total_seconds()
     update_aggregation_stats(
         id=fp.aggregation_id, run_time=processing_time_in_seconds, success=True
     )
+    logger.info(f"\nCompleted in {processing_time_in_seconds} seconds")
+    logger.info(f"DB sessions created {config.db_connections_created}")

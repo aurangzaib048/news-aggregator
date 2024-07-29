@@ -156,9 +156,6 @@ class Aggregator:
             - Otherwise, a list of entries with popularity scores.
         """
         raw_entries = []
-        entries = []
-        processed_articles = []
-        processed_raw_articles = []
         self.report["feed_stats"] = {}
 
         feed_cache = self.download_feeds()
@@ -188,22 +185,24 @@ class Aggregator:
         update_aggregation_stats(id=self.aggregation_id, article_count=len(raw_entries))
 
         logger.info(f"Un-shorten the URL of {len(raw_entries)}")
+        new_articles = []
+        existing_articles = []
         with ThreadPool(config.thread_pool_size) as pool:
-            for result, processed_article in pool.imap_unordered(
+            for new_article, article_from_cache in pool.imap_unordered(
                 unshorten_url, raw_entries
             ):
-                if result:
-                    entries.append(result)
-                if processed_article:
-                    processed_raw_articles.append(processed_article)
+                if new_article:
+                    new_articles.append(new_article)
+                if article_from_cache:
+                    existing_articles.append(article_from_cache)
 
         raw_entries.clear()
 
         logger.info(
-            f"Getting the Popularity score of new article the URL of {len(entries)}"
+            f"Getting the Popularity score of new article the URL of {len(new_articles)}"
         )
         with ThreadPool(config.thread_pool_size) as pool:
-            for result in pool.imap_unordered(get_popularity_score, entries):
+            for result in pool.imap_unordered(get_popularity_score, new_articles):
                 if not result:
                     continue
                 raw_entries.append(result)
@@ -212,12 +211,11 @@ class Aggregator:
             self.normalize_pop_score(raw_entries)
 
         logger.info(
-            f"Getting the Popularity score of old article the URL of {len(processed_raw_articles)}"
+            f"Getting the Popularity score of old article the URL of {len(existing_articles)}"
         )
+        processed_articles = []
         with ThreadPool(config.thread_pool_size) as pool:
-            for result in pool.imap_unordered(
-                get_popularity_score, processed_raw_articles
-            ):
+            for result in pool.imap_unordered(get_popularity_score, existing_articles):
                 if not result:
                     continue
                 processed_articles.append(result)
@@ -226,14 +224,14 @@ class Aggregator:
             self.normalize_pop_score(processed_articles)
 
         if str(config.sources_file) == "sources.en_US":
-            entries.clear()
+            new_articles.clear()
             logger.info(f"Getting the Predicted Channel the API of {len(raw_entries)}")
             with ThreadPool(config.thread_pool_size) as pool:
                 for result in pool.imap_unordered(get_predicted_channels, raw_entries):
                     if not result:
                         continue
-                    entries.append(result)
-            return entries, processed_articles
+                    new_articles.append(result)
+            return new_articles, processed_articles
 
         return raw_entries, processed_articles
 

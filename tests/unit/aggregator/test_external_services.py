@@ -58,6 +58,7 @@ class TestGetPopularityScore:
 
 class TestGetPredictedChannel:
     def test_article_default_channel_or_short_text(self, mocker):
+        logger.info("\n--- test_article_default_channel_or_short_text ---")
         mocker.patch("requests.post")
         mocker.patch("structlog.getLogger")
 
@@ -83,6 +84,7 @@ class TestGetPredictedChannel:
         assert result_2["channels"] == channels_2
 
     def test_article_api_response_no_categories(self, mocker):
+        logger.info("\n--- test_article_api_response_no_categories ---")
         # Mock the necessary dependencies
         mock_post = mocker.patch("requests.post")
         mock_post.return_value.raise_for_status.return_value = None
@@ -102,6 +104,7 @@ class TestGetPredictedChannel:
         assert result["channels"] == channels
 
     def test_article_if_predicted_category_excluded(self, mocker):
+        logger.info("\n--- test_article_if_predicted_category_excluded ---")
         # Mock the necessary dependencies
         mock_post = mocker.patch("requests.post")
         mock_post.return_value.raise_for_status.return_value = None
@@ -131,6 +134,7 @@ class TestGetPredictedChannel:
         assert excluded_category not in result["channels"]
 
     def test_article_if_predicted_category_below_threshold(self, mocker):
+        logger.info("\n--- test_article_if_predicted_category_below_threshold ---")
         # Mock the necessary dependencies
         mock_post = mocker.patch("requests.post")
         mock_post.return_value.raise_for_status.return_value = None
@@ -160,6 +164,7 @@ class TestGetPredictedChannel:
         assert valid_category not in result["channels"]
 
     def test_predict_channel(self, mocker):
+        logger.info("\n--- test_predict_channel ---")
         mock_post = mocker.patch("requests.post")
         mock_post.return_value.raise_for_status.return_value = None
         valid_category = "Sports"
@@ -188,6 +193,7 @@ class TestGetPredictedChannel:
         assert result["channels"] == [valid_category]
 
     def test_predict_channel_with_augment_channel(self, mocker):
+        logger.info("\n--- test_predict_channel_with_augment_channel ---")
         mock_post = mocker.patch("requests.post")
         mock_post.return_value.raise_for_status.return_value = None
         valid_category = "Sports"
@@ -224,6 +230,7 @@ class TestGetPredictedChannel:
         assert set(result_2["channels"]) == {"Top News", "Top Sources", valid_category}
 
     def test_predict_channel_with_default_channel(self, mocker):
+        logger.info("\n--- test_predict_channel_with_default_channel ---")
         mock_post = mocker.patch("requests.post")
         mock_post.return_value.raise_for_status.return_value = None
         valid_category = "Sports"
