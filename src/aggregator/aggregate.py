@@ -25,6 +25,7 @@ from aggregator.parser import download_feed, parse_rss, score_entries
 from aggregator.processor import process_articles, scrub_html, unshorten_url
 from config import get_config
 from db_crud import (
+    get_article,
     insert_aggregation_stats,
     insert_external_channels,
     update_aggregation_stats,
@@ -182,20 +183,34 @@ class Aggregator:
             logger.debug(
                 f"processed {key} in {round((end_time - start_time) * 1000)} ms"
             )
-        update_aggregation_stats(id=self.aggregation_id, article_count=len(raw_entries))
+        update_aggregation_stats(
+            id=self.aggregation_id, start_article_count=len(raw_entries)
+        )
 
         logger.info(f"Un-shorten the URL of {len(raw_entries)}")
-        new_articles = []
+        articles = []
         existing_articles = []
         with ThreadPool(config.thread_pool_size) as pool:
-            for new_article, article_from_cache in pool.imap_unordered(
-                unshorten_url, raw_entries
-            ):
-                if new_article:
-                    new_articles.append(new_article)
-                if article_from_cache:
-                    existing_articles.append(article_from_cache)
+            for article in pool.imap_unordered(unshorten_url, raw_entries):
+                articles.append(article)
 
+        new_articles = []
+        existing_articles = []
+        db_session = config.get_db_session()
+        for article in articles:
+            existing = get_article(
+                article["url_hash"],
+                str(config.sources_file).replace("sources.", ""),
+                db_session,
+            )
+            if existing:
+                existing_articles.append(existing)
+            else:
+                new_articles.append(article)
+
+        update_aggregation_stats(
+            id=self.aggregation_id, cache_hit_count=len(existing_articles)
+        )
         raw_entries.clear()
 
         logger.info(

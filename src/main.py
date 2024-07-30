@@ -50,12 +50,13 @@ if __name__ == "__main__":
             f"brave-today/{config.channel_file}",
         )
 
+    articles = []
+    db_session = config.get_db_session()
     with open(config.output_feed_path / f"{config.feed_path}.json", "r") as f:
         articles = orjson.loads(f.read())
         locale_name = str(config.sources_file).replace("sources.", "")
         aggregation_id = fp.aggregation_id
         logger.info(f"Feed has {len(articles)} items to insert.")
-        db_session = config.get_db_session()
         # for each article, insert into the database, do not use threads
         for article in articles:
             insert_article(
@@ -74,7 +75,11 @@ if __name__ == "__main__":
         datetime.datetime.now() - fp.start_time
     ).total_seconds()
     update_aggregation_stats(
-        id=fp.aggregation_id, run_time=processing_time_in_seconds, success=True
+        id=fp.aggregation_id,
+        run_time=processing_time_in_seconds,
+        success=True,
+        db_session=db_session,
+        end_article_count=len(articles),
     )
     logger.info(f"\nCompleted in {processing_time_in_seconds} seconds")
     logger.info(f"DB sessions created {config.db_connections_created}")

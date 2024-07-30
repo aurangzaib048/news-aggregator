@@ -382,9 +382,9 @@ def insert_article(article, locale_name, aggregation_id, db_session=None):
         logger.error(f"Error Connecting to database: {e}")
 
 
-def get_article(url_hash, locale_name):
+def get_article(url_hash, locale_name, db_session=None):
     try:
-        with config.get_db_session() as session:
+        with db_session or config.get_db_session() as session:
             article = session.query(ArticleEntity).filter_by(url_hash=url_hash).first()
             if article and locale_name in [
                 locale_model.locale.name for locale_model in article.feed.locales
@@ -693,7 +693,7 @@ def get_article_with_external_channels(url_hash, locale):
             article_from_db = (
                 session.query(ArticleEntity).filter_by(url_hash=article_hash).first()
             )
-            article = get_article(url_hash, locale)
+            article = get_article(url_hash, locale, session)
             if article:
                 external_channels = (
                     session.query(ExternalArticleClassificationEntity)
@@ -738,16 +738,26 @@ def insert_aggregation_stats(id, start_time, locale_name):
 
 
 def update_aggregation_stats(
-    id, run_time=0, success=False, feed_count=0, article_count=0, cache_hit_count=0
+    id,
+    run_time=0,
+    success=False,
+    feed_count=0,
+    start_article_count=0,
+    end_article_count=0,
+    cache_hit_count=0,
+    db_session=None,
 ):
     try:
-        with config.get_db_session() as session:
+        with db_session or config.get_db_session() as session:
             record = session.query(AggregationStatsEntity).filter_by(id=id).first()
             if record:
                 record.run_time = record.run_time or run_time
                 record.success = record.success or success
                 record.feed_count = record.feed_count or feed_count
-                record.article_count = record.article_count or article_count
+                record.start_article_count = (
+                    record.start_article_count or start_article_count
+                )
+                record.end_article_count = record.end_article_count or end_article_count
                 record.cache_hit_count = record.cache_hit_count or cache_hit_count
                 session.commit()
                 session.refresh(record)

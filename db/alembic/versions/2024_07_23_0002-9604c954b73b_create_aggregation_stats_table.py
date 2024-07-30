@@ -25,7 +25,8 @@ def upgrade():
         sa.Column("locale_name", sa.String, default=""),
         sa.Column("success", sa.Boolean, default=False),
         sa.Column("feed_count", sa.BigInteger, default=0),
-        sa.Column("article_count", sa.BigInteger, default=0),
+        sa.Column("start_article_count", sa.BigInteger, default=0),
+        sa.Column("end_article_count", sa.BigInteger, default=0),
         sa.Column("cache_hit_count", sa.BigInteger, default=0),
         schema="news",
     )
