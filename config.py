@@ -115,6 +115,8 @@ class Configuration(BaseSettings):
     nu_confidence_threshold: float = 0.9
     nu_excluded_channels: list = ["Crime"]
 
+    news_data_api_token: Optional[str] = "test"
+
     google_api_key: Optional[str] = ""
 
     video_extensions: tuple = (
