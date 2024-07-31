@@ -38,3 +38,11 @@ migrate-down:
 
 
 test: pytest validjson
+
+api-prod:
+	export PYTHONPATH=$PWD:$PWD/src
+	fastapi run api/__init__.py --proxy-headers --port=80
+
+api-dev:
+	export PYTHONPATH=$PWD:$PWD/src
+	fastapi dev api/__init__.py
