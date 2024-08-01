@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import datetime, time
 
 import structlog
-from sqlalchemy import func
+from sqlalchemy import and_, func
 
 from config import get_config
 from csv_to_json import csv_to_dict_db
@@ -263,8 +263,8 @@ def get_publisher_with_locale(publisher_url):
         return []
 
 
-def get_feeds_based_on_locale(locale):
-    data = {}
+def get_publishers_based_on_locale(locale):
+    data = []
     try:
         with config.get_db_session() as session:
             feeds = (
@@ -277,23 +277,30 @@ def get_feeds_based_on_locale(locale):
 
             for feed in feeds:
                 channels = []
-                for feed_locale in feed.locales:
+                for feed_locale in [
+                    locale_model
+                    for locale_model in feed.locales
+                    if locale_model.locale.name == locale
+                ]:
                     channels = list(
                         set([channel.name for channel in feed_locale.channels])
                     )
 
-                data[feed.url] = {
-                    "publisher_name": feed.name,
-                    "category": feed.category,
+                publisher_data = {
+                    "enabled": feed.publisher.enabled,
+                    "publisher_name": feed.publisher.name,
                     "site_url": feed.publisher.url,
                     "feed_url": feed.url,
-                    "og_images": feed.og_images,
-                    "max_entries": feed.max_entries,
-                    "creative_instance_id": "",
-                    "content_type": "article",
+                    "category": feed.category,
+                    "favicon_url": feed.publisher.favicon_url,
+                    "cover_url": feed.publisher.cover_url,
+                    "background_color": feed.publisher.background_color,
+                    "score": feed.publisher.score,
                     "publisher_id": feed.url_hash,
-                    "channels": channels,
+                    "channels": list(set(channels)),
                 }
+
+                data.append(publisher_data)
 
             return data
     except Exception as e:
@@ -709,6 +716,71 @@ def get_article_with_external_channels(url_hash, locale):
         logger.error(f"Error Connecting to database: {e}")
 
 
+def external_channel_stats(locale):
+    try:
+        with config.get_db_session() as session:
+            data = []
+            locale = session.query(LocaleEntity).filter_by(locale=locale).first()
+            articles = (
+                session.query(
+                    ArticleEntity,
+                    func.array_agg(ChannelEntity.name).label("channels"),
+                )
+                .join(
+                    ExternalArticleClassificationEntity,
+                    ArticleEntity.id == ExternalArticleClassificationEntity.article_id,
+                )
+                .join(
+                    FeedLocaleEntity,
+                    ArticleEntity.feed_id == FeedLocaleEntity.feed_id,
+                )
+                .join(
+                    feed_locale_channel,
+                    FeedLocaleEntity.id == feed_locale_channel.c.feed_locale_id,
+                )
+                .join(
+                    ChannelEntity, feed_locale_channel.c.channel_id == ChannelEntity.id
+                )
+                .filter(
+                    and_(
+                        func.array_length(
+                            ExternalArticleClassificationEntity.channels, 1
+                        )
+                        > 0,
+                        # Check that array length is greater than 0
+                        ExternalArticleClassificationEntity.channels.isnot(
+                            None
+                        ),  # Ensure channels is not NULL
+                        FeedLocaleEntity.locale_id == locale.id,
+                    )
+                )
+                .order_by(ArticleEntity.created.desc())
+                .group_by(ArticleEntity.id)
+                # .first()
+                .limit(100000)
+                .all()
+            )
+
+            for result in articles:
+                article, channels = result
+
+                article_data = {
+                    "publisher": article.feed.publisher.name,
+                    "title": article.title,
+                    "description": article.description,
+                    "channels": channels,
+                    "external_channels": article.external_channels[0].channels,
+                    "raw_data": article.external_channels[0].raw_data,
+                }
+
+                data.append(article_data)
+
+            return data
+
+    except Exception as e:
+        logger.error(f"Error Connecting to database: {e}")
+
+
 def get_channels():
     try:
         with config.get_db_session() as session:
@@ -768,6 +840,70 @@ def update_aggregation_stats(
     except Exception as e:
         logger.error(f"Error Connecting to database: {e}")
         return None
+
+
+def get_locales():
+    try:
+        with config.get_db_session() as session:
+            locales = session.query(LocaleEntity.locale).distinct().all()
+
+            return sorted([locale.locale for locale in locales])
+    except Exception as e:
+        logger.error(f"Error Connecting to database: {e}")
+        return []
+
+
+def get_articles_with_locale(
+    locale, start_datetime, page: int = 1, page_size: int = 100
+):
+    try:
+        with config.get_db_session() as session:
+            locale_entity = session.query(LocaleEntity).filter_by(locale=locale).first()
+            if not locale_entity:
+                raise ValueError(f"Locale {locale} not found in the database.")
+
+            offset = (page - 1) * page_size
+
+            articles = (
+                session.query(ArticleEntity)
+                .join(FeedEntity)
+                .join(FeedLocaleEntity)
+                .filter(
+                    FeedLocaleEntity.locale_id == locale_entity.id,
+                    ArticleEntity.created >= start_datetime,
+                )
+                .distinct()
+                .order_by(ArticleEntity.created.desc())
+                .offset(offset)
+                .limit(page_size)
+                .all()
+            )
+
+            data = []
+            for article in articles:
+                article_data = {
+                    "title": article.title,
+                    "publish_time": article.publish_time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "img": article.img,
+                    "category": article.category,
+                    "description": article.description,
+                    "content_type": article.content_type,
+                    "publisher_id": article.feed.url_hash,
+                    "publisher_name": article.feed.publisher.name,
+                    "creative_instance_id": article.creative_instance_id,
+                    "url": article.url,
+                    "url_hash": article.url_hash,
+                    "pop_score": article.pop_score,
+                    "padded_img": article.padded_img,
+                    "score": article.score,
+                }
+
+                data.append(article_data)
+
+            return data
+    except Exception as e:
+        logger.error(f"Error Connecting to database: {e}")
+        return []
 
 
 if __name__ == "__main__":
