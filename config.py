@@ -134,7 +134,7 @@ class Configuration(BaseSettings):
         ".vob",
     )
 
-    database_url: Optional[str] = ""
+    database_url: Optional[str] = "postgres://localhost:5432"
     schema_name: Optional[str] = "news"
 
     def gcp_client(self):
