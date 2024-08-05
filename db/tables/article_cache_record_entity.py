@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, func
+from sqlalchemy import UUID, BigInteger, Column, DateTime, ForeignKey, Integer, func
 from sqlalchemy.orm import relationship
 
 from db.tables.base import Base
@@ -15,6 +15,9 @@ class ArticleCacheRecordEntity(Base):
     cache_hit = Column(Integer, nullable=False, default=0)
     locale_id = Column(BigInteger, ForeignKey("locale.id"), nullable=False)
     created = Column(DateTime, nullable=False, server_default=func.now())
+    aggregation_id = Column(
+        UUID(as_uuid=True), ForeignKey("aggregation_stats.id"), nullable=True
+    )
     modified = Column(
         DateTime,
         nullable=False,
@@ -32,6 +35,7 @@ class ArticleCacheRecordEntity(Base):
             "content": self.cache_hit,
             "created": self.created,
             "modified": self.modified,
+            "aggregation_id": self.aggregation_id,
         }
 
     def to_insert(self) -> dict:

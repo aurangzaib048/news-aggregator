@@ -1,4 +1,6 @@
+import datetime
 import time
+import uuid
 from collections import defaultdict
 from functools import partial
 from multiprocessing import Pool as ProcessPool
@@ -22,7 +24,13 @@ from aggregator.image_processor_sandboxed import get_image_with_max_size
 from aggregator.parser import download_feed, parse_rss, score_entries
 from aggregator.processor import process_articles, scrub_html, unshorten_url
 from config import get_config
-from db_crud import insert_external_channels, update_or_insert_article
+from db_crud import (
+    get_article,
+    insert_aggregation_stats,
+    insert_external_channels,
+    update_aggregation_stats,
+    update_or_insert_article,
+)
 
 config = get_config()
 logger = structlog.get_logger()
@@ -34,6 +42,13 @@ class Aggregator:
         self.feeds = defaultdict(dict)
         self.publishers: dict = _publishers
         self.output_path: Path = _output_path
+        self.start_time = datetime.datetime.now()
+        self.locale_name = str(config.sources_file).replace("sources.", "")
+        self.aggregation_id = uuid.uuid4()
+        logger.info(
+            f"{self.start_time} - Starting aggregation with id {self.aggregation_id} for locale {self.locale_name}"
+        )
+        insert_aggregation_stats(self.aggregation_id, self.start_time, self.locale_name)
 
     def check_images(self, items):
         """
@@ -97,6 +112,10 @@ class Aggregator:
                 if not result:
                     continue
                 downloaded_feeds.append(result)
+        # Update the aggregation_stats with the number of feeds downloaded
+        update_aggregation_stats(
+            id=self.aggregation_id, feed_count=len(downloaded_feeds)
+        )
 
         with ProcessPool(config.concurrency) as pool:
             for result in pool.imap_unordered(parse_rss, downloaded_feeds):
@@ -138,9 +157,6 @@ class Aggregator:
             - Otherwise, a list of entries with popularity scores.
         """
         raw_entries = []
-        entries = []
-        processed_articles = []
-        processed_raw_articles = []
         self.report["feed_stats"] = {}
 
         feed_cache = self.download_feeds()
@@ -167,24 +183,41 @@ class Aggregator:
             logger.debug(
                 f"processed {key} in {round((end_time - start_time) * 1000)} ms"
             )
+        update_aggregation_stats(
+            id=self.aggregation_id, start_article_count=len(raw_entries)
+        )
 
         logger.info(f"Un-shorten the URL of {len(raw_entries)}")
+        articles = []
+        existing_articles = []
         with ThreadPool(config.thread_pool_size) as pool:
-            for result, processed_article in pool.imap_unordered(
-                unshorten_url, raw_entries
-            ):
-                if result:
-                    entries.append(result)
-                if processed_article:
-                    processed_raw_articles.append(processed_article)
+            for article in pool.imap_unordered(unshorten_url, raw_entries):
+                articles.append(article)
 
+        new_articles = []
+        existing_articles = []
+        db_session = config.get_db_session()
+        for article in articles:
+            existing = get_article(
+                article["url_hash"],
+                str(config.sources_file).replace("sources.", ""),
+                db_session,
+            )
+            if existing:
+                existing_articles.append(existing)
+            else:
+                new_articles.append(article)
+
+        update_aggregation_stats(
+            id=self.aggregation_id, cache_hit_count=len(existing_articles)
+        )
         raw_entries.clear()
 
         logger.info(
-            f"Getting the Popularity score of new article the URL of {len(entries)}"
+            f"Getting the Popularity score of new article the URL of {len(new_articles)}"
         )
         with ThreadPool(config.thread_pool_size) as pool:
-            for result in pool.imap_unordered(get_popularity_score, entries):
+            for result in pool.imap_unordered(get_popularity_score, new_articles):
                 if not result:
                     continue
                 raw_entries.append(result)
@@ -193,12 +226,11 @@ class Aggregator:
             self.normalize_pop_score(raw_entries)
 
         logger.info(
-            f"Getting the Popularity score of old article the URL of {len(processed_raw_articles)}"
+            f"Getting the Popularity score of old article the URL of {len(existing_articles)}"
         )
+        processed_articles = []
         with ThreadPool(config.thread_pool_size) as pool:
-            for result in pool.imap_unordered(
-                get_popularity_score, processed_raw_articles
-            ):
+            for result in pool.imap_unordered(get_popularity_score, existing_articles):
                 if not result:
                     continue
                 processed_articles.append(result)
@@ -207,14 +239,14 @@ class Aggregator:
             self.normalize_pop_score(processed_articles)
 
         if str(config.sources_file) == "sources.en_US":
-            entries.clear()
+            new_articles.clear()
             logger.info(f"Getting the Predicted Channel the API of {len(raw_entries)}")
             with ThreadPool(config.thread_pool_size) as pool:
                 for result in pool.imap_unordered(get_predicted_channels, raw_entries):
                     if not result:
                         continue
-                    entries.append(result)
-            return entries, processed_articles
+                    new_articles.append(result)
+            return new_articles, processed_articles
 
         return raw_entries, processed_articles
 
@@ -255,13 +287,16 @@ class Aggregator:
 
         filtered_entries = score_entries(sorted_entries)
 
-        logger.info("Insert articles into the database.")
         locale_name = str(config.sources_file).replace("sources.", "")
+
         with ThreadPool(config.thread_pool_size) as pool:
-            pool.map(
-                partial(update_or_insert_article, locale=locale_name),
-                filtered_entries,
-            )
+
+            def fn(entry):
+                return update_or_insert_article(
+                    entry, locale=locale_name, aggregation_id=self.aggregation_id
+                )
+
+            pool.map(fn, filtered_entries)
 
         # Getting external channels for articles
         if str(config.sources_file) == "sources.en_US":

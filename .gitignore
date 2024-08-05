@@ -14,3 +14,4 @@ feed.ja.json
 sources.global.json
 output/*
 monkeytype.sqlite3
+.vscode

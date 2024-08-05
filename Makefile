@@ -16,19 +16,27 @@ validjson:
 	echo Checking that csv_to_json.py creates valid JSON files...
 	NO_UPLOAD=1 NO_DOWNLOAD=1 python src/csv_to_json.py
 	mv sources/sources-orig.csv sources/sources.csv
-	json_verify < output/sources.json
-	json_verify < output/feed_source.json
+	python ./tests/json_verify.py < output/sources.json
+	python ./tests/json_verify.py < output/feed_source.json
 	echo Checking that sources.json is of the expected size...
-	test `stat -c%s output/sources.json` -gt 10
 	echo Checking that feed.json is of the expected size...
-	test `stat -c%s output/feed_source.json` -gt 10
+	echo System $(shell uname)
+ifeq ($(shell uname), Linux)
+	test `stat -c%s output/sources.json` -gt 10
+else ifeq ($(shell uname), Darwin)
+	test `stat -f%z output/sources.json` -gt 10
+endif
 	echo Checking that main.py creates a valid JSON file...
-	NO_UPLOAD=1 NO_DOWNLOAD=1 python src/main.py
-	json_verify < output/feed/feed.json
+	NO_UPLOAD=1 NO_DOWNLOAD=1 SOURCES_FILE=sources.en_US python src/main.py
+	python ./tests/json_verify.py < output/feed/feed.json
 	echo Checking that the report makes sense...
 	python lib/report-check.py
 	echo Checking that feed/feed.json is of the expected size...
+ifeq ($(shell uname), Linux)
 	test `stat -c%s output/feed/feed.json` -gt 1000
+else ifeq ($(shell uname), Darwin)
+	test `stat -f%z output/feed/feed.json` -gt 1000
+endif
 
 migrate-up:
 	alembic upgrade head

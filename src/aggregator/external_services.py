@@ -58,6 +58,8 @@ def get_popularity_score(_article):
 
 
 def get_predicted_channels(_article):
+    if config.nu_api_url is None:
+        return _article
     """
     Retrieves the predicted channels for an article using the NU-API.
 

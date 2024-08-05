@@ -1,14 +1,13 @@
+import datetime
 import json
 import shutil
-from functools import partial
-from multiprocessing.pool import ThreadPool
 
 import orjson
 import structlog
 
 from aggregator.aggregate import Aggregator
 from config import get_config
-from db_crud import get_channels, insert_article
+from db_crud import get_channels, insert_article, update_aggregation_stats
 from utils import upload_file
 
 config = get_config()
@@ -51,13 +50,36 @@ if __name__ == "__main__":
             f"brave-today/{config.channel_file}",
         )
 
+    articles = []
+    db_session = config.get_db_session()
     with open(config.output_feed_path / f"{config.feed_path}.json", "r") as f:
         articles = orjson.loads(f.read())
         locale_name = str(config.sources_file).replace("sources.", "")
+        aggregation_id = fp.aggregation_id
         logger.info(f"Feed has {len(articles)} items to insert.")
-        with ThreadPool(config.thread_pool_size) as pool:
-            pool.map(partial(insert_article, locale_name=locale_name), articles)
-        logger.info("Inserted articles into the database.")
+        # for each article, insert into the database, do not use threads
+        for article in articles:
+            insert_article(
+                article,
+                locale_name=locale_name,
+                aggregation_id=aggregation_id,
+                db_session=db_session,
+            )
 
     with open(config.output_path / "report.json", "w") as f:
         f.write(json.dumps(fp.report))
+
+    # Store remaining aggregation stats
+    logger.info("storing aggregation stats")
+    processing_time_in_seconds = (
+        datetime.datetime.now() - fp.start_time
+    ).total_seconds()
+    update_aggregation_stats(
+        id=fp.aggregation_id,
+        run_time=processing_time_in_seconds,
+        success=True,
+        db_session=db_session,
+        end_article_count=len(articles),
+    )
+    logger.info(f"\nCompleted in {processing_time_in_seconds} seconds")
+    logger.info(f"DB sessions created {config.db_connections_created}")

@@ -30,6 +30,7 @@ class Configuration(BaseSettings):
     tz: tzinfo = timezone("UTC")
     request_timeout: float = 30.0
     max_content_size: int = 10000000
+    db_connections_created: int = 0
 
     output_feed_path: Path = Field(default=Path(__file__).parent / "output/feed")
     output_path: Path = Field(default=Path(__file__).parent / "output")
@@ -137,7 +138,7 @@ class Configuration(BaseSettings):
         ".vob",
     )
 
-    database_url: Optional[str] = None
+    database_url: Optional[str] = "postgres://localhost:5432"
     schema_name: Optional[str] = "news"
 
     def gcp_client(self):
@@ -149,6 +150,7 @@ class Configuration(BaseSettings):
         """
         Get a database session
         """
+        self.db_connections_created += 1
         engine = create_engine(self.database_url)
         return sessionmaker(bind=engine)()
 
