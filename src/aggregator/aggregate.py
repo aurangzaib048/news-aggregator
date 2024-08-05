@@ -192,7 +192,8 @@ class Aggregator:
         existing_articles = []
         with ThreadPool(config.thread_pool_size) as pool:
             for article in pool.imap_unordered(unshorten_url, raw_entries):
-                articles.append(article)
+                if article is not None:
+                    articles.append(article)
 
         new_articles = []
         existing_articles = []
