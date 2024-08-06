@@ -48,6 +48,7 @@ class Aggregator:
         logger.info(
             f"{self.start_time} - Starting aggregation with id {self.aggregation_id} for locale {self.locale_name}"
         )
+        logger.info(f"Thread pool size: {config.thread_pool_size}")
         insert_aggregation_stats(self.aggregation_id, self.start_time, self.locale_name)
 
     def check_images(self, items):
@@ -289,30 +290,33 @@ class Aggregator:
         filtered_entries = score_entries(sorted_entries)
 
         locale_name = str(config.sources_file).replace("sources.", "")
+        db_session = config.get_db_session()
 
-        with ThreadPool(config.thread_pool_size) as pool:
+        for entry in filtered_entries:
+            update_or_insert_article(
+                entry, locale=locale_name, aggregation_id=self.aggregation_id,
+                db_session=db_session
+            )
 
-            def fn(entry):
-                return update_or_insert_article(
-                    entry, locale=locale_name, aggregation_id=self.aggregation_id
-                )
-
-            pool.map(fn, filtered_entries)
 
         # Getting external channels for articles
         if str(config.sources_file) == "sources.en_US":
             logger.info(
                 f"Getting the External Predicted Channel the API of {len(fixed_entries)}"
             )
+
+            results = []
+            # Using ThreadPool to fetch external channels concurrently
             with ThreadPool(config.thread_pool_size) as pool:
-                for article, ext_channels, api_raw_data in pool.imap_unordered(
-                    get_external_channels_for_article, fixed_entries
-                ):
-                    insert_external_channels(
-                        article["url_hash"],
-                        ext_channels,
-                        api_raw_data,
-                    )
+                results = list(pool.imap_unordered(get_external_channels_for_article, fixed_entries))
+
+            for article, ext_channels, api_raw_data in results:
+                insert_external_channels(
+                    article["url_hash"],
+                    ext_channels,
+                    api_raw_data,
+                    db_session,
+                )
 
         return filtered_entries
 

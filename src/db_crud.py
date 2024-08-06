@@ -456,10 +456,10 @@ def get_article(url_hash, locale_name, db_session=None):
         return None
 
 
-def update_or_insert_article(article_data, locale, aggregation_id):
+def update_or_insert_article(article_data, locale, aggregation_id, db_session=None):
     logger.info(f"update_or_insert_article")
     try:
-        with config.get_db_session() as session:
+        with db_session or config.get_db_session() as session:
             article_hash = article_data.get("url_hash")
             article = (
                 session.query(ArticleEntity).filter_by(url_hash=article_hash).first()
@@ -480,7 +480,7 @@ def update_or_insert_article(article_data, locale, aggregation_id):
                 session.refresh(article)
 
             else:
-                insert_article(article_data, locale, aggregation_id)
+                insert_article(article_data, locale, aggregation_id, db_session)
 
     except Exception as e:
         logger.error(f"Error Connecting to database: {e}")
@@ -673,9 +673,9 @@ def get_global_average_cache_hits():
         logger.error(f"Error Connecting to database: {e}")
 
 
-def insert_external_channels(url_hash, external_channels, raw_data):
+def insert_external_channels(url_hash, external_channels, raw_data, db_session=None):
     try:
-        with config.get_db_session() as session:
+        with db_session or config.get_db_session() as session:
             article_hash = url_hash
             article = (
                 session.query(ArticleEntity).filter_by(url_hash=article_hash).first()
