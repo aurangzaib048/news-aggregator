@@ -294,10 +294,11 @@ class Aggregator:
 
         for entry in filtered_entries:
             update_or_insert_article(
-                entry, locale=locale_name, aggregation_id=self.aggregation_id,
-                db_session=db_session
+                entry,
+                locale=locale_name,
+                aggregation_id=self.aggregation_id,
+                db_session=db_session,
             )
-
 
         # Getting external channels for articles
         if str(config.sources_file) == "sources.en_US":
@@ -308,7 +309,11 @@ class Aggregator:
             results = []
             # Using ThreadPool to fetch external channels concurrently
             with ThreadPool(config.thread_pool_size) as pool:
-                results = list(pool.imap_unordered(get_external_channels_for_article, fixed_entries))
+                results = list(
+                    pool.imap_unordered(
+                        get_external_channels_for_article, fixed_entries
+                    )
+                )
 
             for article, ext_channels, api_raw_data in results:
                 insert_external_channels(

@@ -444,8 +444,6 @@ def get_article(url_hash, locale_name, db_session=None):
                         session.commit()
                         session.refresh(article_cache_record)
 
-                    logger.info(f"Article {article.title} found in database")
-
                     return article_data
                 else:
                     return None
